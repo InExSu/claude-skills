@@ -213,14 +213,67 @@ class Builder:
         self.link_chain(ids)
         self.items[parent_id][link] = ids[0]
 
+    def close_loop_tails(self, body_ids, le):
+        """Замкнуть на loopend все висячие концы тела цикла.
+
+        Обходим тело цикла (one и two), не выходя за его пределы, и у
+        каждого узла без `one` ставим `one = loopend` - это "конец
+        итерации". Узлы, которые сами уводят наружу (branch, end), не
+        трогаем: там выход из цикла задан явно.
+        """
+        seen = set()
+        stack = list(body_ids)
+        while stack:
+            cur = stack.pop()
+            if cur is None or cur in seen:
+                continue
+            seen.add(cur)
+            item = self.items.get(cur)
+            if not isinstance(item, dict):
+                continue
+            typ = item.get("type")
+            if typ in ("loopend",):
+                continue
+            target = item.get("one")
+            if not target:
+                if typ not in ("branch", "end"):
+                    item["one"] = le
+                continue
+            if self.items.get(target, {}).get("type") in ("branch", "end"):
+                continue
+            stack.append(target)
+            if item.get("two"):
+                stack.append(item["two"])
+
+    @staticmethod
+    def pick_loop_closer(kids):
+        """Найти '~ /цикл' среди детей цикла (или глубже - в последнем
+        потомке, куда его могла приклеить attach_loop_closers)."""
+        for kid in kids:
+            if kid["text"].startswith("~ /"):
+                return kid
+        return None
+
     @staticmethod
     def attach_loop_closers(kids):
         """'~ /цикл -> ...' пишется на том же отступе, что и '~ цикл:' - это
-        не ребёнок цикла, а его закрытие. Приклеиваем к предыдущему узлу."""
+        не ребёнок цикла, а его закрытие. Приклеиваем к узлу цикла.
+
+        Важно: приклеивать надо к последнему узлу '~ цикл', а не к последнему
+        узлу вообще. Иначе '~ /цикл' станет ребёнком узла, идущего ПОСЛЕ
+        цикла (например 'Действие 3' из правой ветви вопроса), и цикл
+        останется без закрытия - "цикл без закрытия '~ /цикл -> ...'"."""
         out = []
         for kid in kids:
             if kid["text"].startswith("~ /") and out:
-                out[-1]["children"].append(kid)
+                loop = None
+                for node in reversed(out):
+                    if node["text"].startswith("~ "):
+                        loop = node
+                        break
+                if loop is None:
+                    raise DslError("'~ /цикл' без открытия цикла: %s" % kid["text"])
+                loop["children"].append(kid)
             else:
                 out.append(kid)
         return out
@@ -279,15 +332,12 @@ class Builder:
 
         # цикл
         if text.startswith("~ "):
-            closer = None
-            body = []
-            for kid in kids:
-                if kid["text"].startswith("~ /"):
-                    closer = kid
-                else:
-                    body.append(kid)
+            closer = self.pick_loop_closer(kids)
             if closer is None:
                 raise DslError("цикл без закрытия '~ /цикл -> ...': %s" % text)
+            # убрать closer из тела, иначе рекурсивный build_node
+            # (ветви вопроса) снова наткнётся на него
+            body = [k for k in kids if k is not closer]
             body_text = text[2:].strip()
             if body_text.lower().startswith("цикл:"):
                 body_text = body_text[len("цикл:"):].strip()
@@ -307,11 +357,11 @@ class Builder:
                 b_ids = [le]
             self.link_chain(b_ids)
             self.items[lb]["one"] = b_ids[0]
-            last = b_ids[-1]
-            # если тело уже уходит наружу (например, у вопроса да: -> Ветка),
-            # перетирать one нельзя - иначе потеряем выход из цикла
-            if self.items[last]["type"] not in ("branch", "end") and "one" not in self.items[last]:
-                self.items[last]["one"] = le
+            # замкнуть на loopend ВСЕ тупики тела цикла, а не только
+            # последний узел главной цепочки. Иначе ветви two вопросов
+            # остаются без one, и генератор кода не находит loopend:
+            # "цикл без закрытия '~ /цикл -> ...'".
+            self.close_loop_tails(b_ids, le)
 
             rest = closer["text"][2:].strip()          # "/цикл[: текст][-> Цель]"
             if not rest.startswith("/цикл"):
