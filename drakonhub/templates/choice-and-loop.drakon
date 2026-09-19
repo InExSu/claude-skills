@@ -1,0 +1,26 @@
+{
+    "name": "Разбор входящих заявок",
+    "type": "drakon",
+    "params": "<p>Условие старта: получена новая заявка</p>",
+    "style": "",
+    "items": {
+        "header": { "type": "header", "style": "" },
+        "b0": { "type": "branch", "branchId": 0, "content": "Обработка очереди", "one": "1" },
+
+        "1": { "type": "loopbegin", "content": "Для каждой заявки из очереди", "one": "2" },
+        "2": { "type": "action", "content": "Взять следующую заявку", "one": "3" },
+        "3": { "type": "select", "content": "Тип заявки?", "one": "c1" },
+
+        "c1": { "type": "case", "content": "Ошибка", "one": "10", "two": "c2" },
+        "c2": { "type": "case", "content": "Вопрос", "one": "12", "two": "c3" },
+        "c3": { "type": "case", "content": "", "one": "14" },
+
+        "10": { "type": "action", "content": "Зарегистрировать баг в трекере", "one": "le" },
+        "12": { "type": "action", "content": "Ответить клиенту по шаблону", "one": "le" },
+        "14": { "type": "action", "content": "Передать заявку менеджеру", "one": "le" },
+
+        "le": { "type": "loopend", "one": "20" },
+        "20": { "type": "action", "content": "Отправить сводку по очереди", "one": "21" },
+        "21": { "type": "end" }
+    }
+}

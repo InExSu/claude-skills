@@ -11,21 +11,26 @@ description: >
 
 ## Core Principle
 
-Every identifier carries a type prefix. No exceptions except loop counters and constants (see §7).
+Every identifier carries a type prefix.
+exceptions:
+  global_objects:
+    - ns     # NooSphere global object — NO prefix
+    - rwd    # railway decorator void - NO prefix v_
 
 ## Prefix Table
 
 | Prefix | Type         | Example                   |
 |--------|--------------|---------------------------|
-| `i_`   | integer      | `i_Count = 10`            |
-| `f_`   | float        | `f_Price = 99.99`         |
-| `s_`   | string       | `s_Name = 'John'`         |
-| `b_`   | boolean      | `b_IsActive = true`       |
 | `a_`   | array / list | `a_Items = []`            |
-| `o_`   | object       | `o_User = new User()`     |
-| `m_`   | mixed        | `m_Value = getData()`     |
-| `v_`   | void         | `v_user_Save` (functions) |
+| `b_`   | boolean      | `b_IsActive = true`       |
 | `c_`   | callable     | `c_Fn = trim`             |
+| `f_`   | float        | `f_Price = 99.99`         |
+| `i_`   | integer      | `i_Count = 10`            |
+| `m_`   | mixed        | `m_Value = m_Value_Get()`     |
+| `o_`   | object       | `o_User = new User()`     |
+| `r_`   | result       | `r_result = r_Cache(ns)`  |
+| `s_`   | string       | `s_Name = 'John'`         |
+| `v_`   | void         | `v_user_Save` (functions) |
 
 Here's the translation:
 
@@ -59,13 +64,14 @@ Structure: `{ReturnType}_{Object}_{Verb}`
 | Function            | Returns |
 |---------------------|---------|
 | `a_user_DataLoad`   | array   |
-| `s_user_NameGet`    | string  |
-| `i_user_AgeGet`     | integer |
-| `b_user_Exists`     | boolean |
-| `o_user_Create`     | object  |
-| `v_user_Save`       | void    |
-| `f_order_TotalCalc` | float   |
 | `b_form_Validate`   | boolean |
+| `b_user_Exists`     | boolean |
+| `f_order_TotalCalc` | float   |
+| `i_user_AgeGet`     | integer |
+| `o_user_Create`     | object  |
+| `r_User_Create`     | result  |
+| `s_user_NameGet`    | string  |
+| `v_user_Save`       | void    |
 
 Approved verbs: `Get` `Set` `Load` `Save` `Create` `Update` `Delete` `Check` `Validate` `Process` `Calc` `Format` `Find`
 

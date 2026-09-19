@@ -1,0 +1,29 @@
+{
+    "name": "Обработка заказа",
+    "type": "drakon",
+    "params": "<p>Условие старта: клиент оформил заказ на сайте</p><p>Акторы: клиент, менеджер, склад</p>",
+    "description": "<p>Ресурсы: CRM, складские остатки, эквайринг</p>",
+    "style": "",
+    "items": {
+        "header": { "type": "header", "style": "" },
+        "b0": { "type": "branch", "branchId": 0, "content": "Проверка заказа", "one": "1" },
+        "1": { "type": "action", "content": "Загрузить данные заказа из CRM", "one": "2" },
+        "2": { "type": "question", "flag1": 1, "one": "3", "two": "6", "content": "Товар есть на складе?" },
+        "3": { "type": "action", "content": "Зарезервировать товар", "one": "b1" },
+        "6": { "type": "action", "content": "Сообщить клиенту об отсутствии товара", "one": "9" },
+        "9": { "type": "end" },
+
+        "b1": { "type": "branch", "branchId": 1, "content": "Оплата", "one": "10" },
+        "10": { "type": "insertion", "content": "Выставить счёт", "one": "11" },
+        "11": { "type": "simpleinput", "content": "Поступила оплата", "one": "12" },
+        "12": { "type": "question", "flag1": 1, "one": "13", "two": "14", "content": "Оплата подтверждена?" },
+        "13": { "type": "action", "content": "Отметить заказ оплаченным", "one": "b2" },
+        "14": { "type": "action", "content": "Отменить резерв", "one": "9" },
+
+        "b2": { "type": "branch", "branchId": 2, "content": "Отгрузка", "one": "20" },
+        "20": { "type": "action", "content": "Упаковать заказ", "one": "21", "side": "d1" },
+        "21": { "type": "insertion", "content": "Передать заказ в доставку", "one": "22" },
+        "22": { "type": "action", "content": "Отправить клиенту трек-номер", "one": "9" },
+        "d1": { "type": "duration", "content": "не более 30 мин" }
+    }
+}

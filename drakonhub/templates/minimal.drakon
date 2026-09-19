@@ -1,0 +1,16 @@
+{
+    "name": "Покормить кота",
+    "type": "drakon",
+    "params": "<p>Условие старта: кот пришёл и требует еду</p>",
+    "description": "<p>Ресурсы: миска, корм, вода</p>",
+    "style": "",
+    "items": {
+        "header": { "type": "header", "style": "" },
+        "b0": { "type": "branch", "branchId": 0, "content": "Кормление", "one": "1" },
+        "1": { "type": "action", "content": "Насыпать корм в миску", "one": "2" },
+        "2": { "type": "question", "flag1": 1, "one": "3", "two": "4", "content": "В миске есть вода?" },
+        "3": { "type": "action", "content": "Проверить миску через час", "one": "5" },
+        "4": { "type": "action", "content": "Налить свежей воды", "one": "5" },
+        "5": { "type": "end" }
+    }
+}
