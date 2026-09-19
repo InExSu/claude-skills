@@ -13,7 +13,8 @@
 [![Last commit](https://img.shields.io/github/last-commit/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills/commits/master)
 [![Commit activity](https://img.shields.io/github/commit-activity/y/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills/commits/master)
 [![Repo size](https://img.shields.io/github/repo-size/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills)
-[![License](https://img.shields.io/badge/license-not%20specified-lightgrey?style=flat-square)](#-license)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 **English** · [Русский](README.ru.md)
 
@@ -137,6 +138,11 @@ Hand-writing `.drakon` means inventing an `id` per icon and wiring `one` / `two`
 claude-skills/
 ├── README.md                  ← you are here (English)
 ├── README.ru.md               ← Russian version
+├── CONTRIBUTING.md            ← how to submit a skill or a fix
+├── CONTRIBUTING.ru.md
+├── LICENSE                    ← MIT
+├── .github/
+│   └── PULL_REQUEST_TEMPLATE.md
 ├── gh.sh                      ← add-all / commit / push helper
 ├── constant-naming-convention/
 │   └── SKILL.md
@@ -208,6 +214,8 @@ cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 
 ## 🤝 Contributing
 
+Pull requests are welcome — from a typo fix to a whole new skill. Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full process: what makes a good `description`, the content guidelines, the checks to run before submitting, and what gets merged fastest. The pull request template asks for the problem the change solves and when the skill should **not** fire.
+
 A new skill is just a folder with a `SKILL.md`:
 
 ```markdown
@@ -234,7 +242,17 @@ Guidelines that keep this collection useful:
 
 ## 📄 License
 
-No license file is present in this repository yet, so all rights are reserved by the author by default. If you intend to reuse or redistribute this material, open an issue to agree on terms (for example MIT) before doing so.
+[MIT](LICENSE) © 2026 Michael Popov (InExSu)
+
+In plain terms: use it, fork it, ship it inside your own product, modify it, sell it. The only obligations are keeping the copyright notice and license text along with the copy. There is no warranty.
+
+```
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction...
+```
+
+Contributions are accepted under the same license — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 <div align="center">
 

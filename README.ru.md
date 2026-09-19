@@ -13,7 +13,8 @@
 [![Last commit](https://img.shields.io/github/last-commit/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills/commits/master)
 [![Commit activity](https://img.shields.io/github/commit-activity/y/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills/commits/master)
 [![Repo size](https://img.shields.io/github/repo-size/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills)
-[![License](https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-%D0%BD%D0%B5%20%D1%83%D0%BA%D0%B0%D0%B7%D0%B0%D0%BD%D0%B0-lightgrey?style=flat-square)](#-лицензия)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.ru.md)
+[![License: MIT](https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-MIT-green?style=flat-square)](LICENSE)
 
 [English](README.md) · **Русский**
 
@@ -137,6 +138,11 @@ python3 scripts/drakon_render.py map templates/silhouette.drakon          # ка
 claude-skills/
 ├── README.md                  ← английская версия
 ├── README.ru.md               ← вы здесь (русская версия)
+├── CONTRIBUTING.md            ← как предложить скилл или правку
+├── CONTRIBUTING.ru.md
+├── LICENSE                    ← MIT
+├── .github/
+│   └── PULL_REQUEST_TEMPLATE.md
 ├── gh.sh                      ← помощник: add-all / commit / push
 ├── constant-naming-convention/
 │   └── SKILL.md
@@ -208,6 +214,8 @@ cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 
 ## 🤝 Как добавить свой скилл
 
+Pull request'ы приветствуются — от исправления опечатки до целого нового скилла. Полный процесс описан в **[CONTRIBUTING.ru.md](CONTRIBUTING.ru.md)**: каким должно быть хорошее `description`, правила к содержанию, проверки перед отправкой и что мержится быстрее всего. Шаблон pull request'а спрашивает, какую проблему решает правка и когда скилл **не** должен срабатывать.
+
 Новый скилл — это просто папка с `SKILL.md`:
 
 ```markdown
@@ -234,7 +242,17 @@ description: >
 
 ## 📄 Лицензия
 
-Файла лицензии в репозитории пока нет, поэтому по умолчанию все права принадлежат автору. Если вы хотите переиспользовать или распространять эти материалы, откройте issue и согласуйте условия (например, MIT) заранее.
+[MIT](LICENSE) © 2026 Михаил Попов (InExSu)
+
+Простыми словами: используйте, форкайте, встраивайте в свой продукт, изменяйте, продавайте. Единственная обязанность — сохранять уведомление об авторских правах и текст лицензии вместе с копией. Гарантий нет.
+
+```
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction...
+```
+
+Вклад принимается под той же лицензией — см. [CONTRIBUTING.ru.md](CONTRIBUTING.ru.md).
 
 <div align="center">
 
