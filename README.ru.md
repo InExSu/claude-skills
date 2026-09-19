@@ -89,7 +89,7 @@ flowchart LR
 
 **Правила языка, встроенные в скилл:** поток идёт сверху вниз без стрелок, ветвление только вправо, линии не пересекаются, «чем правее, тем хуже» — успешный путь идёт прямо вниз, отклонения уходят вправо. Ровно один `end`, одна иконка = один шаг, действия в императиве, вопросы без *и* / *или* / *не*.
 
-### Скрипты (Python 3, только стандартная библиотека)
+### Скрипты (Python 3, только стандартная библиотека — кроме последнего)
 
 ```bash
 cd drakonhub
@@ -112,6 +112,17 @@ python3 scripts/drakon_render.py svg templates/silhouette.drakon out.svg  # ка
 python3 scripts/drakon_render.py map templates/silhouette.drakon          # карта координат для агента
 #   → OK: templates/silhouette.drakon -> out.svg (7x6 клеток, 18 иконок)
 ```
+
+### Как ловить зависания настоящим движком
+
+`check` ловит только те ловушки, которые удалось формализовать. Редактор может зависнуть и на диаграмме, которую чекер считает корректной: `layoutSilhouette` идёт вниз, натыкается на возврат и идёт снова — бесконечно.
+
+```bash
+python3 scripts/drakon_try.py render my.drakon   # OK nodes=94 | HANG | ERROR <причина>
+python3 scripts/drakon_try.py stack  my.drakon   # где именно висит, через CDP Debugger.pause
+```
+
+Это единственный скрипт, выходящий за стандартную библиотеку: ему нужны `git`, `node`, `playwright` и chromium из кэша Playwright. При первом запуске он клонирует `stepan-mitkin/drakonhub_desktop` в `drakonhub/.cache/` (каталог в `.gitignore`). Всё остальное в скилле работает и без него.
 
 ### Зачем нужен DSL
 

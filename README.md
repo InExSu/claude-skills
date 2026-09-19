@@ -87,7 +87,7 @@ The only skill with executable tooling. It turns ordinary, human-readable text i
 
 **Language rules baked into the skill:** flow goes top-down with no arrows, branching only to the right, lines never cross, and "the further right, the worse" — the happy path goes straight down while failures drift right. Exactly one `end`, one icon = one step, actions in imperative mood, questions without *and* / *or* / *not*.
 
-### Scripts (Python 3, standard library only)
+### Scripts (Python 3, standard library only — except the last one)
 
 ```bash
 cd drakonhub
@@ -110,6 +110,17 @@ python3 scripts/drakon_render.py svg templates/silhouette.drakon out.svg  # pict
 python3 scripts/drakon_render.py map templates/silhouette.drakon          # coordinate map for agents
 #   → OK: templates/silhouette.drakon -> out.svg (7x6 клеток, 18 иконок)
 ```
+
+### Catching hangs with the real engine
+
+`check` only catches the traps that could be formalized. The editor can still hang on a diagram the checker calls valid — `layoutSilhouette` walks down, hits a back edge and walks again, forever.
+
+```bash
+python3 scripts/drakon_try.py render my.drakon   # OK nodes=94 | HANG | ERROR <reason>
+python3 scripts/drakon_try.py stack  my.drakon   # where it hangs, via CDP Debugger.pause
+```
+
+This is the only script that leaves the standard library: it needs `git`, `node`, `playwright` and a chromium from the Playwright cache. On first run it clones `stepan-mitkin/drakonhub_desktop` into `drakonhub/.cache/` (gitignored) and serves it locally. Everything else in the skill works without it.
 
 ### Why the DSL exists
 

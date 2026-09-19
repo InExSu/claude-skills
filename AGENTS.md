@@ -27,11 +27,16 @@
 - Отдай агенту файл `SKILL.md` (или папку скилла целиком) на чтение, либо скопируй
   папку в каталог скиллов твоего агента. Проверочные точки из каталога:
   `README.md` / `README.ru.md` (EN/RU).
-- Для `drakonhub` скрипты требуют только Python 3 и стандартную библиотеку
-  (`json`, `re`, `sys`, `textwrap`); сетевых запросов нет. Проверки:
+- Для `drakonhub` три скрипта из четырёх требуют только Python 3 и стандартную
+  библиотеку (`json`, `re`, `sys`, `textwrap`); сетевых запросов нет. Проверки:
   `python3 scripts/drakon_tool.py check templates/choice-and-loop.drakon`,
   `python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon`,
   `python3 scripts/drakon_render.py svg templates/silhouette.drakon /tmp/out.svg`.
+- Четвёртый скрипт, `drakonhub/scripts/drakon_try.py`, — необязательный: он
+  строит холст настоящим движком DrakonHub и ловит зависания редактора. Ему
+  нужны `git`, `node`, `playwright` и chromium в кэше Playwright; при первом
+  запуске он клонирует `stepan-mitkin/drakonhub_desktop` в `drakonhub/.cache/`
+  (каталог в `.gitignore`). Без него скилл полностью работоспособен.
 
 ## Каталог (кратко)
 

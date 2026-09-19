@@ -190,6 +190,57 @@ agent-browser screenshot  /tmp/dh.png
 Если в консоли (`agent-browser errors`) чисто и силуэт появился — диаграмма
 безопасна для редактора.
 
+### 5.1 Надёжная проверка: `scripts/drakon_try.py render`
+
+Браузерный путь (UI + Import) часто недоступен: на drakonhub.com страница
+входа, а `agent-browser` может отсутствовать. Надёжнее прогнать **настоящий
+движок DrakonHub** (`drakon_canvas.js`) без UI:
+
+```bash
+python3 scripts/drakon_try.py render path/to/file.drakon   # OK / HANG / ERROR
+python3 scripts/drakon_try.py path/to/file.drakon          # то же (render по умолчанию)
+python3 scripts/drakon_try.py stack path/to/file.drakon    # стек зависания (CDP Debugger.pause)
+```
+
+Скрипт сам клонирует `stepan-mitkin/drakonhub_desktop` в кэш, поднимает
+`http.server` и открывает страницу в headless-chromium из кэша Playwright.
+Результаты:
+
+| Результат | Что значит | Что делать |
+|---|---|---|
+| `OK` | холст построен (печатается число узлов) | файл безопасен |
+| `HANG` | `layoutSilhouette`/`findLeftLinks` ушли в бесконечный обход | перестроить по § 8.1 |
+| `ERROR ... getDown/getUp/tail/type` | скевер ветки оборван | см. § 8.1, правило 2 |
+| `ERROR ... head.right is busy` | в узел ведёт два `two` | см. § 8.1, правило 1 |
+
+Движок можно дергать и напрямую из браузера — см. § 5.2.
+
+### 5.2 Прямой вызов движка из headless-браузера
+
+`drakonhub.html` — полностью браузерный билд. Зависимости модуля
+`drakon_canvas` надо связать вручную (так делает `local.js`):
+
+```js
+const dc = window.drakon_canvas();
+const _common = window.dh2common(), _utils = window.utils(), _html = window.html_0_1();
+const _core = window.dh2core();
+_core.dh2common = _common; _core.html = _html; _core.utils = _utils;
+dc.edit_tools = window.edit_tools(); dc.html = _html;
+dc.tracing = _core;                       // НЕ window.drcore - его нет в глобалах
+dc.utils = _utils; dc.gconfig = window.dh2config();
+const w = dc.DrakonCanvas(); w.init();
+holder.appendChild(w.render(1200, 800, {}));
+await w.setDiagram('t1', diagram, undefined, true);   // здесь может зависнуть
+```
+
+`window.drcore` не определён (только `dh2core`), `dh2common` — фабрика
+(`window.dh2common()`), `drakon_canvas.DrakonCanvas` доступен только после
+`window.drakon_canvas()`.
+
+Чтобы увидеть, где именно висит, ставьте точкой останова `Debugger.pause`
+через CDP и читайте `callFrames` — так находится конкретная функция
+(`findLeftLinks`, `getDown`, `createEdge`).
+
 ---
 
 ## 6. DSL — компактный текст вместо JSON
@@ -319,6 +370,46 @@ python3 drakon_render.py map in.drakon           # карта координат
 подвешивает редактор.** Обходчик `layoutSilhouette` / `buildManhattan` идёт
 вниз, натыкается на возврат, идёт снова — бесконечный цикл, приложение
 зависает без ошибки.
+
+### 8.1 Проверенные правила построения (отладка реальным движком)
+
+Выявлены прогоном `drakon_canvas.js` в headless-chromium (§ 5.1). Диаграмма
+считается годной, только если `drakon_try.py render` печатает `OK`.
+
+1. **Один вход на узел.** В узел должен вести ровно один `one` и не более
+   одного `two`. Два `two` в один узел → `ERROR: head.right is busy`.
+   Узел с 2+ входами по `one` — причина зацикливания `findLeftLinks`.
+   Общий блок не «переиспользуйте», а дублируйте: пусть отчёт и фиксация
+   итога лежат в своей ветке, а не висят целиком для трёх переходов.
+2. **Ветка — это всегда «приёмник перехода».** Если на ветку уходят сразу
+   несколько иконок из разных мест цикла (`le -> b2`, `21.two -> b2`,
+   `37.one -> b2`, `11.two -> b2`), движок либо вешается, либо падает в
+   `getDown`. Разносите выходы по **разным** веткам.
+3. **Цикл + выход наружу = отдельная ветка на каждый выход.** Рабочая
+   топология (паттерн «A-star»): цикл живёт в своей ветке, `loopend.one`
+   уводит в ветку-проверку, а каждый нетривиальный исход (повтор, смена
+   исполнителя, завершение) — в свою ветку. Возврат в цикл — переходом
+   на **id ветки цикла**, а не на иконку внутри неё.
+4. **`arrow-loop` (петля внутри ветки) — риск.** Возврат `one` на
+   `arrow-loop` в ветке с циклом зацикливает `findLeftLinks`. Внутри цикла
+   используйте пару `loopbegin`/`loopend`, а не самодельную петлю.
+5. **`duration` (`side`) сам по себе безопасен.** Если схема висит, не
+   списывайте на `side` — проверяйте topology (правила 1–3).
+6. **Порядок `branchId` = порядок слева направо.** Переходы «назад-влево»
+   (возврат в ветку цикла) допустимы и не ломают движок — это норма
+   паттерна «A-star»/«Lunch break».
+
+Типовой симптом и лечение:
+
+```
+HANG  → findLeftLinks зациклился на junction
+        значит: несколько входов в один узел или несколько выходов
+                из цикла на одну ветку → правила 1–3
+ERROR → Cannot read properties of undefined (reading 'tail'/'type')
+        значит: скевер ветки оборван (нет выхода из ветки,
+                или ветка-приёмник удалена) → правило 2
+ERROR → head.right is busy → правило 1
+```
 
 Цикл замыкайте только двумя каноническими способами (так сделано во всех
 официальных примерах):
