@@ -1,0 +1,243 @@
+<div align="center">
+
+# 🧠 Claude Skills
+
+**Коллекция скиллов для [Claude Code](https://claude.com/claude-code)** — стандарты кода, дисциплина тестирования, архитектурные паттерны, проектирование ИИ-агентов и инструменты для диаграмм DRAKON.
+
+[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-14-blue?style=flat-square)](#-каталог-скиллов)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-skills-D97757?style=flat-square)](https://claude.com/claude-code)
+[![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-под-микроскопом)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-каталог-скиллов)
+[![Markdown](https://img.shields.io/badge/docs-RU%20%7C%20EN-000000?style=flat-square&logo=markdown&logoColor=white)](#-каталог-скиллов)
+
+[![Last commit](https://img.shields.io/github/last-commit/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills/commits/master)
+[![Commit activity](https://img.shields.io/github/commit-activity/y/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills/commits/master)
+[![Repo size](https://img.shields.io/github/repo-size/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills)
+[![License](https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-%D0%BD%D0%B5%20%D1%83%D0%BA%D0%B0%D0%B7%D0%B0%D0%BD%D0%B0-lightgrey?style=flat-square)](#-лицензия)
+
+[English](README.md) · **Русский**
+
+</div>
+
+---
+
+## 📖 Что это
+
+Это набор **скиллов** для Claude Code. Скилл — папка с файлом `SKILL.md`, во frontmatter которого указаны `name` и `description`. Claude читает описания при старте и сам решает, применим ли скилл к текущей задаче, — поэтому после установки они включаются в обычном диалоге, без специальных команд.
+
+Большинство скиллов — **контракты поведения**: они запрещают класс удобных, но вредных упрощений (тавтологичные тесты, правка кода без воспроизводящего теста, функции-спагетти, токены, потраченные на вежливость). Меньшая часть — **инструментарий**: `drakonhub` поставляет Python-скрипты, справку по формату файлов и готовые шаблоны.
+
+```mermaid
+flowchart LR
+    A[Запрос пользователя] --> B{Claude сверяет<br/>описание скилла}
+    B -->|подходит| C[Загружается SKILL.md]
+    B -->|не подходит| D[Ответ без скилла]
+    C --> E{Правила и инструменты<br/>из скилла}
+    E --> F[Ограниченный, проверяемый результат]
+```
+
+---
+
+## 📚 Каталог скиллов
+
+### 🧪 Тестирование и корректность
+
+| Скилл | Что он требует |
+|---|---|
+| **[tdd-bugfix](tdd-bugfix/SKILL.md)** | Исправление багов строго по циклу **RED → YELLOW → GREEN**: сначала падающий тест, воспроизводящий баг, затем минимальная заплатка, затем чистая правка. Патчить исходники до появления красного теста запрещено. |
+| **[quality-tests](quality-tests/SKILL.md)** | Тесты, которые проверяют поведение, а не наращивают покрытие. Таблица диагностики в начале плюс разделы об антипаттернах (тавтологичные тесты), о том, что тестировать, и почему набор тестов не ловит баги. |
+| **[self-test-design](self-test-design/SKILL.md)** | Программы проектируются как надёжные устройства: Design-For-Test, встроенное самотестирование (BIST/POST), контракт `TestPort`, таблицы переходов состояний. Золотое правило: проверяй **отсутствие нежелательного** поведения, а не только наличие желаемого. |
+### 🏗️ Архитектура и рефакторинг
+
+| Скилл | Что он требует |
+|---|---|
+| **[pure-functions](pure-functions/SKILL.md)** | 7 аксиом для функций JavaScript/TypeScript: отображение входов в выходы, детерминизм, отсутствие побочных эффектов, формат результата `ok/error`, предусловия/постусловия/инварианты. |
+| **[if-condition-refactor](if-condition-refactor/SKILL.md)** | Сложные условия `if`/`switch` превращаются в читаемые предикатные функции: ниже цикломатическая сложность, лучше тестируемость, никакой бизнес-логики внутри условий. |
+| **[noosphere](noosphere/SKILL.md)** | Единый источник истины: один глобальный объект состояния `ns`, инициализируемый один раз и изменяемый через определённый интерфейс. Чистые функции **не должны** зависеть от `ns`. |
+| **[state-machine-if-improves-understanding](state-machine-if-improves-understanding/SKILL.md)** | Правило выбора: когда switch-машина состояний Шалыто оправдана (нелинейные переходы, retry-циклы, постраничная загрузка), а когда лучше обычный SRP-код. |
+| **[spaghetti-RWD](spaghetti-RWD/SKILL.md)** | Разбивает монолитную функцию на цепочку шагов с единственной ответственностью, разделяющих один объект состояния и выполняемых общим раннером. *(opt-in: `@spaghetti`)* |
+
+### ✍️ Имена и стиль *(opt-in)*
+
+| Скилл | Что он требует |
+|---|---|
+| **[hungarian-notation](hungarian-notation/SKILL.md)** | Префиксы типов для переменных, функций, ключей объектов, свойств классов и констант в любом языке. Только явное включение. *(активация: `@hungarian`)* |
+| **[constant-naming-convention](constant-naming-convention/SKILL.md)** | Константы названы описательно, **включая хранимое значение**, чтобы код документировал сам себя. |
+| **[token-economy](token-economy/SKILL.md)** | Каждый токен должен работать: никакой вежливости «для галочки» и пересказа уже сказанного — в промптах, инструкциях, документации и коде. |
+
+### 🔗 Конвейеры
+
+| Скилл | Что он требует |
+|---|---|
+| **[rwd-chain](rwd-chain/SKILL.md)** | Паттерн конвейера на JavaScript: каждый шаг — декорируемая функция над общим мутабельным `NS_Container`; если шаг выставил `s_Error`, цепочка останавливается. Поля для профилирования и логирования встроены. |
+
+### 🤖 ИИ-агенты и 🐉 Диаграммы
+
+| Скилл | Что он требует |
+|---|---|
+| **[ru-psychoagent](ru-psychoagent/SKILL.md)** | Принципы архитектуры ИИ-агентов из отечественной психологической школы — Лурия, Выготский, Бернштейн, Бахтин: внутренняя речь, сенсомоторные петли, смыслообразование. |
+| **[drakonhub](drakonhub/SKILL.md)** | Чтение, создание и правка диаграмм DRAKON (`.drakon`) и структурированных ментальных карт (`.graf`): точная JSON-схема, семантика иконок, правила языка, валидатор и шаблоны. |
+
+---
+## 🐉 drakonhub под микроскопом
+
+Единственный скилл с исполняемым инструментарием. Он превращает диаграммы DRAKON в то, с чем надёжно работают и человек, и LLM.
+
+**Правила языка, встроенные в скилл:** поток идёт сверху вниз без стрелок, ветвление только вправо, линии не пересекаются, «чем правее, тем хуже» — успешный путь идёт прямо вниз, отклонения уходят вправо. Ровно один `end`, одна иконка = один шаг, действия в императиве, вопросы без *и* / *или* / *не*.
+
+### Скрипты (Python 3, только стандартная библиотека)
+
+```bash
+cd drakonhub
+
+# 1. Проверка диаграммы по схеме импорта DrakonHub и правилам DRAKON
+python3 scripts/drakon_tool.py check templates/choice-and-loop.drakon
+#   → OK: ошибок и замечаний нет
+
+# 2. Чтение диаграммы как псевдокода с разбивкой по ветвям силуэта
+python3 scripts/drakon_tool.py read templates/minimal.drakon
+
+# 3. Запись диаграмм в компактном DSL вместо ручной сборки JSON
+python3 scripts/drakon_dsl.py to-drakon templates/workout.dsl out.drakon
+python3 scripts/drakon_dsl.py to-dsl    out.drakon out.dsl
+python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon
+#   → OK: графы совпали (6 узлов)
+
+# 4. Расчёт раскладки по правилам силуэта и отрисовка
+python3 scripts/drakon_render.py svg templates/silhouette.drakon out.svg  # картинка для человека
+python3 scripts/drakon_render.py map templates/silhouette.drakon          # карта координат для агента
+#   → OK: templates/silhouette.drakon -> out.svg (7x6 клеток, 18 иконок)
+```
+
+### Зачем нужен DSL
+
+Писать `.drakon` вручную означает придумывать `id` для каждой иконки и вручную проставлять связи `one` / `two` — работа, в которой LLM ошибается. DSL описывает алгоритм текстом с отступами, а конвертер сам раздаёт идентификаторы, строит связи и раскладывает силуэт:
+
+```
+# Тренировка
+> Условие старта: спортзал, есть 40 минут
+@ Разминка
+  Выполнить суставную разминку
+```
+
+| Файл | Назначение |
+|---|---|
+| `SKILL.md` | Сам скилл: правила, семантика иконок, схема формата |
+| `reference/file-format.md` | Подробный разбор JSON-формата `.drakon` и крайних случаев |
+| `scripts/drakon_tool.py` | `read` (псевдокод) и `check` (валидация) |
+| `scripts/drakon_dsl.py` | Конвертация DSL ⇄ `.drakon` и проверка round-trip |
+| `scripts/drakon_render.py` | Раскладка силуэта → SVG или карта координат |
+| `templates/*.drakon`, `templates/*.dsl` | Готовые примеры: minimal, choice-and-loop, silhouette, workout |
+
+---
+
+## 📂 Структура репозитория
+
+```
+claude-skills/
+├── README.md                  ← английская версия
+├── README.ru.md               ← вы здесь (русская версия)
+├── gh.sh                      ← помощник: add-all / commit / push
+├── constant-naming-convention/
+│   └── SKILL.md
+├── drakonhub/
+│   ├── SKILL.md
+│   ├── reference/file-format.md
+│   ├── scripts/{drakon_tool,drakon_dsl,drakon_render}.py
+│   ├── templates/{minimal,choice-and-loop,silhouette}.drakon
+│                  workout.dsl
+├── hungarian-notation/SKILL.md
+├── if-condition-refactor/SKILL.md
+├── noosphere/SKILL.md
+├── pure-functions/SKILL.md
+├── quality-tests/SKILL.md
+├── ru-psychoagent/SKILL.md
+├── rwd-chain/SKILL.md
+├── self-test-design/SKILL.md
+├── spaghetti-RWD/SKILL.md
+├── state-machine-if-improves-understanding/SKILL.md
+├── tdd-bugfix/SKILL.md
+└── token-economy/SKILL.md
+```
+
+Все скиллы устроены одинаково: одна папка, один `SKILL.md`, YAML-frontmatter с `name` + `description` (у части указан ещё `allowed-tools`).
+
+---
+
+## 🚀 Установка
+
+### Для всех проектов (личные скиллы)
+
+```bash
+git clone https://github.com/InExSu/claude-skills.git /tmp/claude-skills
+mkdir -p ~/.claude/skills
+cp -R /tmp/claude-skills/*/ ~/.claude/skills/
+```
+
+### Для одного проекта
+
+```bash
+mkdir -p .claude/skills
+cp -R /tmp/claude-skills/*/ .claude/skills/
+```
+
+Claude Code находит скиллы сам: сканирует папки в поисках `SKILL.md` и читает frontmatter — ни регистрации, ни файла конфигурации не требуется.
+
+Чтобы поставить один скилл, скопируйте только его папку:
+
+```bash
+cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
+```
+
+---
+
+## 🛠 Использование
+
+1. **Просто спрашивайте.** Описания написаны под живые формулировки: *«исправь баг»*, *«fix this bug»*, *«почему тесты ничего не ловят»*, *«сделай диаграмму алгоритма»*, *«разбей функцию»*. Подходящий скилл загрузится сам.
+2. **Opt-in скиллы** сами не срабатывают — нужен явный токен активации: `@hungarian` для венгерской нотации, `@spaghetti` для RWD-декомпозиции.
+3. **Комбинируйте осознанно.** `tdd-bugfix` + `quality-tests` или `spaghetti-RWD` + `noosphere` + `rwd-chain` образуют связный процесс: разложить, договориться о состоянии, собрать конвейер.
+4. **Указывайте на файл.** Для `drakonhub` упоминание конкретного `.drakon` плюс *«проверь»* или *«отрисуй»* выбирает нужный скрипт.
+
+### Помощник для коммитов
+
+```bash
+./gh.sh "add DRAKON skills"    # git add -A . && git commit -m "$1" && git push
+```
+
+---
+
+## 🤝 Как добавить свой скилл
+
+Новый скилл — это просто папка с `SKILL.md`:
+
+```markdown
+---
+name: my-skill
+description: >
+  Точные условия срабатывания — когда применять и, что не менее важно, когда НЕТ.
+---
+
+# My Skill
+
+## Правила
+...
+```
+
+Правила, которые держат коллекцию полезной:
+
+- **Описание — это API.** Явно указывайте и триггеры, и исключения: скилл, который срабатывает везде, не срабатывает нигде.
+- **Требуйте, а не советуйте.** Запрет («никогда не патчить код, пока нет падающего теста») работает лучше мягкой рекомендации.
+- **Показывайте плохое и хорошее.** Пары «до/после» учат лучше абстракций.
+- **Указывайте область применения.** Отмечайте язык или фреймворк, чтобы скилл не протекал в чужую работу.
+
+---
+
+## 📄 Лицензия
+
+Файла лицензии в репозитории пока нет, поэтому по умолчанию все права принадлежат автору. Если вы хотите переиспользовать или распространять эти материалы, откройте issue и согласуйте условия (например, MIT) заранее.
+
+<div align="center">
+
+**[⬆ наверх](#-claude-skills)** · [English version](README.md)
+
+</div>
