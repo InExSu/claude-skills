@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  skills:
+    name: Skill frontmatter and docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check skill folders, frontmatter, README catalog and links
+        run: python3 .github/scripts/check_skills.py
+
+  drakonhub:
+    name: drakonhub scripts and templates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Compile the scripts
+        run: python3 -m py_compile drakonhub/scripts/*.py
+
+      - name: Validate every template
+        working-directory: drakonhub
+        run: |
+          set -euo pipefail
+          for file in templates/*.drakon; do
+            echo "::group::check $file"
+            python3 scripts/drakon_tool.py check "$file"
+            echo "::endgroup::"
+          done
+
+      - name: Read every diagram as pseudocode
+        working-directory: drakonhub
+        run: |
+          set -euo pipefail
+          for file in templates/*.drakon; do
+            python3 scripts/drakon_tool.py read "$file" > /dev/null
+          done
+
+      - name: DSL round-trip (.drakon -> DSL -> .drakon)
+        working-directory: drakonhub
+        run: |
+          set -euo pipefail
+          for file in templates/*.drakon; do
+            python3 scripts/drakon_dsl.py roundtrip "$file"
+          done
+
+      - name: Build a diagram from the DSL example
+        working-directory: drakonhub
+        run: |
+          set -euo pipefail
+          python3 scripts/drakon_dsl.py to-drakon templates/workout.dsl /tmp/workout.drakon
+          python3 scripts/drakon_tool.py check /tmp/workout.drakon
+          python3 scripts/drakon_dsl.py to-dsl /tmp/workout.drakon /tmp/workout.dsl
+
+      - name: Render an SVG and a coordinate map
+        working-directory: drakonhub
+        run: |
+          set -euo pipefail
+          python3 scripts/drakon_render.py svg templates/silhouette.drakon /tmp/silhouette.svg
+          python3 scripts/drakon_render.py map templates/minimal.drakon > /dev/null
+          test -s /tmp/silhouette.svg

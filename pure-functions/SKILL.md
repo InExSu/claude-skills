@@ -1,5 +1,6 @@
 ---
 name: pure-functions
+license: MIT
 description: Чистые функции на JavaScript/TypeScript. Формат ok/error, предусловия/постусловия/инварианты, запрещённые конструкции, композиция. Используй при написании любых функций на JS/TS.
 ---
 

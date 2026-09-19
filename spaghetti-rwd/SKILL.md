@@ -1,5 +1,6 @@
 ---
-name: spaghetti-RWD
+name: spaghetti-rwd
+license: MIT
 description: >
   Apply this skill when the user asks to "разобрать спагетti", "разбить функцию",
   "переделать спагетти", decompose a monolithic function, or activates via

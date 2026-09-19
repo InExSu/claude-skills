@@ -14,6 +14,7 @@
 [![Commit activity](https://img.shields.io/github/commit-activity/y/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills/commits/master)
 [![Repo size](https://img.shields.io/github/repo-size/InExSu/claude-skills?style=flat-square)](https://github.com/InExSu/claude-skills)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
+[![CI](https://github.com/InExSu/claude-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/InExSu/claude-skills/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 **English** · [Русский](README.ru.md)
@@ -57,7 +58,7 @@ flowchart LR
 | **[if-condition-refactor](if-condition-refactor/SKILL.md)** | Complex `if`/`switch` conditions become readable predicate functions — lower cyclomatic complexity, better testability, no inlined business logic inside conditions. |
 | **[noosphere](noosphere/SKILL.md)** | A single source of truth: one global state object `ns`, initialized once, mutated through a defined interface. Pure functions must **not** depend on `ns`. |
 | **[state-machine-if-improves-understanding](state-machine-if-improves-understanding/SKILL.md)** | A decision rule for when a Shalyto switch state machine is justified (non-linear transitions, retry loops, pagination) and when plain SRP code is the better answer. |
-| **[spaghetti-RWD](spaghetti-RWD/SKILL.md)** | Splits a monolithic function into a chain of single-responsibility steps sharing one state object, executed by a common step runner. *(opt-in: `@spaghetti`)* |
+| **[spaghetti-rwd](spaghetti-rwd/SKILL.md)** | Splits a monolithic function into a chain of single-responsibility steps sharing one state object, executed by a common step runner. *(opt-in: `@spaghetti`)* |
 
 ### ✍️ Naming & style *(opt-in)*
 
@@ -78,7 +79,7 @@ flowchart LR
 | Skill | What it enforces |
 |---|---|
 | **[ru-psychoagent](ru-psychoagent/SKILL.md)** | Architecture principles for AI agents drawn from the Russian psychological school — Luria, Vygotsky, Bernstein, Bakhtin: internal speech, sensorimotor loops, sense-making. |
-| **[drakonhub](drakonhub/SKILL.md)** | Reading, creating and editing DRAKON algorithm diagrams (`.drakon`) and structured mind maps (`.graf`): exact JSON schema, icon semantics, language rules, a validator and templates. |
+| **[drakonhub](drakonhub/SKILL.md)** | Turns ordinary text into a JSON file containing a DRAKON diagram (`.drakon`) and structured mind maps (`.graf`): exact JSON schema, icon semantics, language rules, a validator and templates. Viewing — [DrakonHub](https://drakonhub.com/) by Stepan Mitkin. |
 
 ## 🐉 drakonhub spotlight
 
@@ -140,8 +141,14 @@ claude-skills/
 ├── README.ru.md               ← Russian version
 ├── CONTRIBUTING.md            ← how to submit a skill or a fix
 ├── CONTRIBUTING.ru.md
+├── CODE_OF_CONDUCT.md         ← Contributor Covenant 2.1
+├── SECURITY.md                ← threat model and how to report
 ├── LICENSE                    ← MIT
+├── .editorconfig
 ├── .github/
+│   ├── workflows/ci.yml       ← checks every push and pull request
+│   ├── ISSUE_TEMPLATE/        ← bug report and skill proposal forms
+│   ├── scripts/check_skills.py
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── gh.sh                      ← add-all / commit / push helper
 ├── constant-naming-convention/
@@ -160,7 +167,7 @@ claude-skills/
 ├── ru-psychoagent/SKILL.md
 ├── rwd-chain/SKILL.md
 ├── self-test-design/SKILL.md
-├── spaghetti-RWD/SKILL.md
+├── spaghetti-rwd/SKILL.md
 ├── state-machine-if-improves-understanding/SKILL.md
 ├── tdd-bugfix/SKILL.md
 └── token-economy/SKILL.md
@@ -201,13 +208,25 @@ cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 
 1. **Just ask.** Descriptions are written to trigger on real phrasing: *"fix this bug"*, *"исправь баг"*, *"why don't my tests catch anything"*, *"сделай диаграмму алгоритма"*, *"разбей функцию"*. The matching skill loads itself.
 2. **Opt-in skills** never fire on their own — they require an explicit activation token: `@hungarian` for Hungarian notation, `@spaghetti` for the RWD decomposition.
-3. **Combine deliberately.** `tdd-bugfix` + `quality-tests`, or `spaghetti-RWD` + `noosphere` + `rwd-chain`, form a coherent workflow: decompose, agree on state, wire the pipeline.
+3. **Combine deliberately.** `tdd-bugfix` + `quality-tests`, or `spaghetti-rwd` + `noosphere` + `rwd-chain`, form a coherent workflow: decompose, agree on state, wire the pipeline.
 4. **Point at a file.** For `drakonhub`, referencing a concrete `.drakon` file plus *"check it"* or *"render it"* selects the right script.
 
 ### Commit helper
 
 ```bash
 ./gh.sh "add DRAKON skills"    # git add -A . && git commit -m "$1" && git push
+```
+
+### Automated checks
+
+CI runs on every push and pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The same commands work locally:
+
+```bash
+python3 .github/scripts/check_skills.py       # frontmatter, README catalog, relative links
+cd drakonhub
+for f in templates/*.drakon; do python3 scripts/drakon_tool.py check "$f"; done
+python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon
+python3 scripts/drakon_render.py svg templates/silhouette.drakon /tmp/out.svg
 ```
 
 ---

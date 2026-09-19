@@ -15,6 +15,7 @@ A skill is a folder in the repository root containing a `SKILL.md` file:
 ```markdown
 ---
 name: my-skill
+license: MIT
 description: >
   Precise trigger conditions — when to use this skill, and just as importantly when NOT to.
 ---
@@ -27,13 +28,15 @@ description: >
 
 Claude Code scans folders for `SKILL.md` and reads `name` + `description` from the YAML frontmatter. If the folder is present, the skill is installed — there is no registry and no configuration file.
 
-Required frontmatter keys:
+Frontmatter keys, with the constraints CI enforces:
 
 | Key | Rules |
 |---|---|
-| `name` | Must match the folder name, lowercase, words separated by `-`. |
-| `description` | The most important part of a skill — see below. |
-| `allowed-tools` | Optional. Restricts the tools a skill may use, e.g. `Read, Write, Edit`. |
+| `name` | **Required.** 1–64 characters of lowercase letters, digits and single hyphens (`[a-z0-9]+(-[a-z0-9]+)*`), no leading, trailing or doubled hyphen, and it must match the folder name exactly. |
+| `description` | **Required.** 1–1024 characters. Describes what the skill does and when to use it — see below. |
+| `license` | Declared as `license: MIT` in every skill here, so a folder copied on its own still carries its license. |
+| `allowed-tools` | Optional. Space-separated tools pre-approved for the turn the skill runs, e.g. `Read Write Edit`. |
+| `compatibility` | Optional, max 500 characters. Only if the skill has real environment requirements. |
 
 ## Writing a description that works
 
@@ -71,12 +74,22 @@ python3 scripts/drakon_render.py svg templates/silhouette.drakon /tmp/out.svg
 
 All three must report `OK`. `roundtrip` is the important one: it converts `.drakon` → DSL → `.drakon` and compares the graphs, so a change in the converter that breaks links is caught immediately.
 
+The repository also ships a whole-repo consistency check, which needs no arguments:
+
+```bash
+python3 .github/scripts/check_skills.py
+```
+
+It validates the frontmatter of every skill against the specification (name shape, name matching the folder, description length, `license` present), checks that both README files link to every skill and that the `skills-N` badge matches the real count, verifies that no relative link in the documentation is broken, and warns when a `SKILL.md` grows past 500 lines.
+
+Both this check and the `drakonhub` scripts run automatically on every pull request — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml). A red run means one of the commands above failed, so run them locally before pushing rather than debugging through CI.
+
 ## Pull request process
 
 1. Fork the repository and create a branch: `git checkout -b add/my-skill`.
 2. Make the change. One skill or one concern per pull request.
 3. Update the [skill catalog](README.md#-skill-catalog) in **both** `README.md` and `README.ru.md` if you added or renamed a skill — the tables and the `skills-N` badge count live there.
-4. Run the checks above when your change touches `drakonhub`, and paste the output into the pull request description.
+4. Run `python3 .github/scripts/check_skills.py` always, and the `drakonhub` commands when your change touches that skill. Paste the output into the pull request description.
 5. Open the pull request. Describe **what problem the skill solves** and **when it should not fire** — that is what a reviewer needs most.
 
 ### What gets a pull request merged fastest

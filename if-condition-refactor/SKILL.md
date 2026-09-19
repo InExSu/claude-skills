@@ -1,5 +1,6 @@
 ---
 name: if-condition-refactor
+license: MIT
 description: Рефакторинг сложных условий if/switch в читаемые предикатные функции. Улучшает Cyclomatic Complexity и тестируемость.
 # when_to_use: >
 #   - Пользователь просит упростить условия, почистить if-else или улучшить читаемость логики

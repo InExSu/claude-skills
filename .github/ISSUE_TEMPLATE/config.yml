@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How to contribute / Как контрибьютить
+    url: https://github.com/InExSu/claude-skills/blob/master/CONTRIBUTING.md
+    about: Read this before opening a pull request — what makes a skill mergeable, and what gets rejected.
+  - name: View or edit a DRAKON diagram
+    url: https://drakonhub.com/
+    about: DrakonHub by Stepan Mitkin — the web editor for the .drakon files this repository produces.

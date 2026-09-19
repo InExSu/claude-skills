@@ -1,5 +1,6 @@
 ---
 name: constant-naming-convention
+license: MIT
 description: Provides guidelines for naming constants descriptively, including their values, to improve code readability and maintainability. Use this skill when defining or refactoring constants in any codebase to ensure adherence to a clear naming standard.
 ---
 

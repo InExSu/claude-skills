@@ -1,5 +1,6 @@
 ---
 name: tdd-bugfix
+license: MIT
 description: |
   Use this skill whenever the user asks to fix a bug, error, exception, failing behavior, or unexpected output in code — including phrases like "fix this bug", "why is this failing", "this throws an error", "исправь баг", "почини ошибку". Enforces a strict red → yellow → green workflow before any fix is considered done: (1) RED — write a failing test that reproduces the bug exactly, and prove it fails for the right reason; (2) YELLOW — make the minimal, possibly ugly patch that turns the test green, without yet cleaning anything up; (3) GREEN — refactor the patch into a proper, clean fix while keeping all tests passing, then run the full test suite to confirm no regressions. Do NOT use this skill for writing brand-new features from scratch with no existing bug (use standard TDD instead), and do not skip straight to editing source code when a bug report or failing behavior is described — the red test must exist first.
 ---

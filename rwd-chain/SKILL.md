@@ -1,5 +1,6 @@
 ---
 name: rwd-chain
+license: MIT
 description: >
   Apply this skill when the user writes pipeline/chain execution code, sequential
   function runners with error handling, decorator-wrapped steps, or asks to implement

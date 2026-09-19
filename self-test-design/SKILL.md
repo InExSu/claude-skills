@@ -1,5 +1,6 @@
 ---
 name: self-test-design
+license: MIT
 description: Design and build software like reliable hardware devices — with testability engineered in from the start (Design-For-Test), not bolted on afterward. Apply when architecting programs, modules, games, services, or APIs; when discussing "self-testing", "built-in test", "самотестирование", reliability, QA automation, flaky behavior, or state-machine bugs. Also applies to any test strategy discussion — the golden rule (verify absence of unwanted behavior, not just presence of wanted behavior) is universal.
 ---
 

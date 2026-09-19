@@ -1,5 +1,6 @@
 ---
 name: noosphere
+license: MIT
 description: >
   Use when designing global state management for an application — creating
   a single shared state object/store (Noosphere State, `ns`) that acts as

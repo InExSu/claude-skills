@@ -1,5 +1,6 @@
 ---
 name: hungarian-notation
+license: MIT
 description: >
   Apply this skill when the user requests Hungarian notation, prefix-typed naming,
   or activates via @hungarian or "венгерская нотация". Covers variables, functions,
