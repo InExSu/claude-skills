@@ -82,7 +82,7 @@ flowchart LR
 
 ## 🐉 drakonhub spotlight
 
-The only skill with executable tooling. It turns DRAKON diagrams into something both a human and an LLM can work with reliably.
+The only skill with executable tooling. It turns ordinary, human-readable text into a JSON file containing a DRAKON diagram. For viewing, use [DrakonHub](https://drakonhub.com/) by Stepan Mitkin.
 
 **Language rules baked into the skill:** flow goes top-down with no arrows, branching only to the right, lines never cross, and "the further right, the worse" — the happy path goes straight down while failures drift right. Exactly one `end`, one icon = one step, actions in imperative mood, questions without *and* / *or* / *not*.
 
