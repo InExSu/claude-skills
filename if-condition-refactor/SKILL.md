@@ -7,7 +7,7 @@ description: Рефакторинг сложных условий if/switch в �
 #   - В коде встречаются вложенные if глубже 2 уровней
 #   - Булевы выражения содержат более 3 операторов без группировки
 #   - Бизнес-логика инлайнится внутри условий
-allowed-tools: Read, Write, Edit
+allowed-tools: Read Write Edit
 ---
 
 # Refactor Complex Conditionals to Predicate Functions

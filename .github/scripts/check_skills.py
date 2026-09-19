@@ -152,6 +152,17 @@ def check_skill(skill):
     if field_value(frontmatter, "license") is None:
         report(skill_md, "frontmatter has no license (expected `license: MIT`)")
 
+    allowed_tools = field_value(frontmatter, "allowed-tools")
+    if allowed_tools is not None:
+        if "," in allowed_tools:
+            report(
+                skill_md,
+                "allowed-tools must be space-separated per the specification "
+                f"(found commas): {allowed_tools}",
+            )
+        if allowed_tools in ("", "[]"):
+            report(skill_md, "allowed-tools is present but empty")
+
     line_count = len(skill_md.read_text(encoding="utf-8").split("\n"))
     if line_count > SKILL_LINES_WARNING:
         warn(
