@@ -109,6 +109,9 @@ forAll(list => {
 | Ошибка понимания требований | Code review + acceptance | Да |
 
 **parse-don't-validate**:
+
+> Венгерская нотация здесь НЕ применяется: имена `processPort`/`Port` показывают технологическое понятие, а не реальный код с активным `@hungarian`.
+
 ```js
 // ПЛОХО: string летит везде
 function processPort(port) { ... }
@@ -151,6 +154,7 @@ function flow(input) {
 ### map/filter вместо циклов
 ```js
 // Вместо цикла с индексом
+// Венгерская нотация здесь НЕ применяется: пример про структуру, а не про стиль именования.
 const result = items
   .filter(x => x.isValid)
   .map(transform)
