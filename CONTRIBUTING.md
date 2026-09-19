@@ -26,7 +26,7 @@ description: >
 ...
 ```
 
-Claude Code scans folders for `SKILL.md` and reads `name` + `description` from the YAML frontmatter. If the folder is present, the skill is installed — there is no registry and no configuration file.
+Agents implementing the [Agent Skills](https://agentskills.io) standard scan folders for `SKILL.md` and read `name` + `description` from the YAML frontmatter. If the folder is present, the skill is installed — there is no registry and no configuration file.
 
 Frontmatter keys, with the constraints CI enforces:
 

@@ -26,7 +26,7 @@ description: >
 ...
 ```
 
-Claude Code сканирует папки в поисках `SKILL.md` и читает `name` + `description` из YAML-frontmatter. Если папка есть — скилл установлен: ни реестра, ни файла конфигурации нет.
+Агенты, реализующие стандарт [Agent Skills](https://agentskills.io), сканируют папки в поисках `SKILL.md` и читают `name` + `description` из YAML-frontmatter. Если папка есть — скилл установлен: ни реестра, ни файла конфигурации нет.
 
 Ключи frontmatter и ограничения, которые проверяет CI:
 

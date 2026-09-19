@@ -1,11 +1,11 @@
 <div align="center">
 
-# 🧠 Claude Skills
+# 🧠 AI Agent Skills
 
-**A curated collection of [Claude Code](https://claude.com/claude-code) skills** — coding standards, testing discipline, architecture patterns, AI-agent design and DRAKON diagram tooling.
+**A curated collection of [Agent Skills](https://agentskills.io) for AI agents** — coding standards, testing discipline, architecture patterns, agent design and DRAKON diagram tooling. They work with any agent that implements the open standard, including [Claude Code](https://claude.com/claude-code).
 
 [![Skills](https://img.shields.io/badge/skills-14-blue?style=flat-square)](#-skill-catalog)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-skills-D97757?style=flat-square)](https://claude.com/claude-code)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-spotlight)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-skill-catalog)
 [![Markdown](https://img.shields.io/badge/docs-Markdown-000000?style=flat-square&logo=markdown&logoColor=white)](#-skill-catalog)
@@ -25,13 +25,13 @@
 
 ## 📖 What is this?
 
-This repository is a set of **skills** for Claude Code. A skill is a folder with a `SKILL.md` file whose YAML frontmatter contains a `name` and a `description`. Claude reads the description at startup and decides on its own whether the skill applies to the current task — so, once installed, the skills activate during normal conversation, without any special effort.
+This repository is a set of **skills for AI agents that implement the [Agent Skills](https://agentskills.io) open standard**. A skill is a folder with a `SKILL.md` file whose YAML frontmatter contains a `name` and a `description`. The agent reads the description at startup and decides on its own whether the skill applies to the current task — so, once installed, the skills activate during normal conversation, without any special effort.
 
 Most skills are **behavioral contracts**: they forbid a class of convenient-but-harmful shortcuts (tautological tests, patching code without a reproducing test, spaghetti functions, tokens spent on politeness). A few are **tooling**: `drakonhub` ships Python scripts, a file-format reference and ready-made templates.
 
 ```mermaid
 flowchart LR
-    A[User request] --> B{Claude matches<br/>skill description}
+    A[User request] --> B{The agent matches<br/>skill description}
     B -->|relevant| C[Load SKILL.md]
     B -->|not relevant| D[Answer without the skill]
     C --> E{Rules and tools<br/>from the skill}
@@ -147,9 +147,10 @@ claude-skills/
 ├── .editorconfig
 ├── .github/
 │   ├── workflows/ci.yml       ← checks every push and pull request
-│   ├── ISSUE_TEMPLATE/        ← bug report and skill proposal forms
+│   ├── ISSUE_TEMPLATE/        ← bug report and skill proposal forms, plus config.yml
 │   ├── scripts/check_skills.py
 │   └── PULL_REQUEST_TEMPLATE.md
+├── AGENTS.md                  ← machine-readable notes for AI agents consuming this repo
 ├── gh.sh                      ← add-all / commit / push helper
 ├── constant-naming-convention/
 │   └── SKILL.md
@@ -179,28 +180,36 @@ Every skill follows the same shape: one folder, one `SKILL.md`, YAML frontmatter
 
 ## 🚀 Getting started
 
-### Install for every project (personal skills)
+Clone once, then point your agent at the folders:
 
 ```bash
 git clone https://github.com/InExSu/claude-skills.git /tmp/claude-skills
-mkdir -p ~/.claude/skills
-cp -R /tmp/claude-skills/*/ ~/.claude/skills/
 ```
 
-### Install for one project
+The skills are ordinary folders; anything that implements the [Agent Skills](https://agentskills.io) standard can consume them. The exact place to put them depends on the agent — check its documentation for the skills directory. Two examples with Claude Code:
 
 ```bash
+# every project: personal skills
+mkdir -p ~/.claude/skills
+cp -R /tmp/claude-skills/*/ ~/.claude/skills/
+
+# one project only
 mkdir -p .claude/skills
 cp -R /tmp/claude-skills/*/ .claude/skills/
 ```
 
-Claude Code discovers skills automatically by scanning folders for `SKILL.md` and reading its frontmatter — no registration step, no config file.
+No registration step and no configuration file: if a folder with a `SKILL.md` is present where the agent looks for skills, the skill is installed.
 
-To install a single skill, copy just its folder:
+To install a single skill, copy just its folder — it is self-contained (its reference material and scripts, if any, live inside the same folder):
 
 ```bash
 cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 ```
+
+### Using a skill with another agent
+
+- A skill is the folder itself: give your agent `SKILL.md` (or the folder containing it) — as a file it can read, or by copying the folder into the skills directory your agent uses, as in the examples above. The layout an agent needs is always the same: `SKILL.md` plus, for `drakonhub`, its `reference/`, `scripts/` and `templates/` subfolders.
+- Two things an agent may handle differently, worth knowing upfront: pre-approved tools (`allowed-tools` in two of these skills is marked experimental in the standard and supported unevenly across agents), and how the agent matches the `description` — the exact phrasings that trigger a skill live in each skill's frontmatter (see the skill table or run `skills-ref to-prompt <skill-dir>`).
 
 ---
 
@@ -211,11 +220,15 @@ cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 3. **Combine deliberately.** `tdd-bugfix` + `quality-tests`, or `spaghetti-rwd` + `noosphere` + `rwd-chain`, form a coherent workflow: decompose, agree on state, wire the pipeline.
 4. **Point at a file.** For `drakonhub`, referencing a concrete `.drakon` file plus *"check it"* or *"render it"* selects the right script.
 
-### Commit helper
+### Commit helper (this repository's local convention)
+
+The `gh.sh` helper in the repository root stages everything, commits and pushes in one call:
 
 ```bash
 ./gh.sh "add DRAKON skills"    # git add -A . && git commit -m "$1" && git push
 ```
+
+Use it only from this repository — and double-check `git status` before running it, since it adds **all** changes including unreviewed ones.
 
 ### Automated checks
 
@@ -275,7 +288,7 @@ Contributions are accepted under the same license — see [CONTRIBUTING.md](CONT
 
 <div align="center">
 
-**[⬆ back to top](#-claude-skills)** · [Русская версия](README.ru.md)
+**[⬆ back to top](#-ai-agent-skills)** · [Русская версия](README.ru.md)
 
 </div>
 ---

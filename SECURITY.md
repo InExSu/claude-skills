@@ -22,7 +22,7 @@ Only the current `master` branch is supported. There are no released versions an
 
 - Diagrams themselves. A `.drakon` file describes someone's process; the content of an algorithm is not a security boundary.
 - The absence of a feature, unless it leads to silent data loss.
-- Anything requiring the attacker to already have write access to your machine or Claude Code configuration.
+- Anything requiring the attacker to already have write access to your machine or agent configuration.
 
 ## How to report
 

@@ -1,11 +1,11 @@
 <div align="center">
 
-# 🧠 Claude Skills
+# 🧠 Скиллы для AI-агентов
 
-**Коллекция скиллов для [Claude Code](https://claude.com/claude-code)** — стандарты кода, дисциплина тестирования, архитектурные паттерны, проектирование ИИ-агентов и инструменты для диаграмм DRAKON.
+**Коллекция [Agent Skills](https://agentskills.io) для AI-агентов** — стандарты кода, дисциплина тестирования, архитектурные паттерны, проектирование агентов и инструменты для диаграмм DRAKON. Подходит любому агенту, реализующему открытый стандарт, в том числе [Claude Code](https://claude.com/claude-code).
 
 [![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-14-blue?style=flat-square)](#-каталог-скиллов)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-skills-D97757?style=flat-square)](https://claude.com/claude-code)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-под-микроскопом)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-каталог-скиллов)
 [![Markdown](https://img.shields.io/badge/docs-RU%20%7C%20EN-000000?style=flat-square&logo=markdown&logoColor=white)](#-каталог-скиллов)
@@ -25,13 +25,13 @@
 
 ## 📖 Что это
 
-Это набор **скиллов** для Claude Code. Скилл — папка с файлом `SKILL.md`, во frontmatter которого указаны `name` и `description`. Claude читает описания при старте и сам решает, применим ли скилл к текущей задаче, — поэтому после установки они включаются в обычном диалоге, без специальных команд.
+Это набор **скиллов для AI-агентов, реализующих открытый стандарт [Agent Skills](https://agentskills.io)**. Скилл — папка с файлом `SKILL.md`, во frontmatter которого указаны `name` и `description`. Агент читает описания при старте и сам решает, применим ли скилл к текущей задаче, — поэтому после установки они включаются в обычном диалоге, без специальных команд.
 
 Большинство скиллов — **контракты поведения**: они запрещают класс удобных, но вредных упрощений (тавтологичные тесты, правка кода без воспроизводящего теста, функции-спагетти, токены, потраченные на вежливость). Меньшая часть — **инструментарий**: `drakonhub` поставляет Python-скрипты, справку по формату файлов и готовые шаблоны.
 
 ```mermaid
 flowchart LR
-    A[Запрос пользователя] --> B{Claude сверяет<br/>описание скилла}
+    A[Запрос пользователя] --> B{Агент сверяет<br/>описание скилла}
     B -->|подходит| C[Загружается SKILL.md]
     B -->|не подходит| D[Ответ без скилла]
     C --> E{Правила и инструменты<br/>из скилла}
@@ -149,9 +149,10 @@ claude-skills/
 ├── .editorconfig
 ├── .github/
 │   ├── workflows/ci.yml       ← проверки на каждый push и pull request
-│   ├── ISSUE_TEMPLATE/        ← формы бага и предложения скилла
+│   ├── ISSUE_TEMPLATE/        ← формы бага и предложения скилла, плюс config.yml
 │   ├── scripts/check_skills.py
 │   └── PULL_REQUEST_TEMPLATE.md
+├── AGENTS.md                  ← машиночитаемые заметки для AI-агентов, потребляющих репозиторий
 ├── gh.sh                      ← помощник: add-all / commit / push
 ├── constant-naming-convention/
 │   └── SKILL.md
@@ -181,28 +182,36 @@ claude-skills/
 
 ## 🚀 Установка
 
-### Для всех проектов (личные скиллы)
+Склонируйте один раз, затем укажите своему агенту на папки:
 
 ```bash
 git clone https://github.com/InExSu/claude-skills.git /tmp/claude-skills
-mkdir -p ~/.claude/skills
-cp -R /tmp/claude-skills/*/ ~/.claude/skills/
 ```
 
-### Для одного проекта
+Скиллы — это обычные папки, их потребит всё, что реализует стандарт [Agent Skills](https://agentskills.io). Куда именно положить папки, зависит от агента — смотрите его документацию про каталог скиллов. Два примера с Claude Code:
 
 ```bash
+# все проекты: личные скиллы
+mkdir -p ~/.claude/skills
+cp -R /tmp/claude-skills/*/ ~/.claude/skills/
+
+# один проект
 mkdir -p .claude/skills
 cp -R /tmp/claude-skills/*/ .claude/skills/
 ```
 
-Claude Code находит скиллы сам: сканирует папки в поисках `SKILL.md` и читает frontmatter — ни регистрации, ни файла конфигурации не требуется.
+Ни регистрации, ни файла конфигурации: если папка с `SKILL.md` есть там, где агент ищет скиллы, — скилл установлен.
 
-Чтобы поставить один скилл, скопируйте только его папку:
+Чтобы поставить один скилл, скопируйте только его папку — она самодостаточна (справка и скрипты, если есть, лежат внутри той же папки):
 
 ```bash
 cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 ```
+
+### Использование скилла с другим агентом
+
+- Скилл — это сама папка: отдайте агенту `SKILL.md` (или папку с ним) — как файл для чтения, либо скопируйте папку в каталог скиллов вашего агента, как в примерах выше. Раскладка всегда одинакова: `SKILL.md` плюс, для `drakonhub`, подпапки `reference/`, `scripts/` и `templates/`.
+- Два момента, которые агенты обрабатывают по-разному, — стоит знать заранее: предодобренные инструменты (`allowed-tools` в двух здешних скиллах помечен в стандарте как экспериментальный и поддерживается неравномерно) и то, как агент сопоставляет `description`, — точные фразы-триггеры живут во frontmatter каждого скилла (см. таблицу скиллов или выполните `skills-ref to-prompt <папка-скилла>`).
 
 ---
 
@@ -213,11 +222,15 @@ cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 3. **Комбинируйте осознанно.** `tdd-bugfix` + `quality-tests` или `spaghetti-rwd` + `noosphere` + `rwd-chain` образуют связный процесс: разложить, договориться о состоянии, собрать конвейер.
 4. **Указывайте на файл.** Для `drakonhub` упоминание конкретного `.drakon` плюс *«проверь»* или *«отрисуй»* выбирает нужный скрипт.
 
-### Помощник для коммитов
+### Помощник для коммитов (локальная конвенция этого репозитория)
+
+Скрипт `gh.sh` в корне репозитория складывает всё в индекс, коммитит и пушит одним вызовом:
 
 ```bash
 ./gh.sh "add DRAKON skills"    # git add -A . && git commit -m "$1" && git push
 ```
+
+Используйте его только из этого репозитория — и проверяйте `git status` перед запуском, потому что он добавляет **все** изменения, включая непроверенные.
 
 ### Автоматические проверки
 
@@ -277,6 +290,6 @@ in the Software without restriction...
 
 <div align="center">
 
-**[⬆ наверх](#-claude-skills)** · [English version](README.md)
+**[⬆ наверх](#-скиллы-для-ai-агентов)** · [English version](README.md)
 
 </div>
