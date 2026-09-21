@@ -576,10 +576,38 @@ def build_diagram(roots):
         entry = build_block(builder, implicit.children, end_id)
         builder.add("branch", branchId=0, one=entry or end_id)
 
-    # перенумеровать ветки по порядку создания
+    # Перенумеровать ветки: вложенные создаются внутри build_block раньше
+    # верхнеуровневых, поэтому порядок создания обратному порядку слева
+    # направо (правило 6). Проверено: прямой порядок даёт head.right is busy.
     branch_ids = [i for i, n in builder.items.items() if n["type"] == "branch"]
-    for number, node_id in enumerate(branch_ids):
+    for number, node_id in enumerate(reversed(branch_ids)):
         builder.items[node_id]["branchId"] = number
+
+    # Хвост ветки уходит вправо, в следующую ветку (правило 2): ветка не
+    # может кончаться в end, пока правее есть живая ветка, иначе движок
+    # падает (head.right is busy). Переадресуем только узлы, ведущие прямо
+    # в end и не лежащие на пути последней (финальной) ветки.
+    by_id = sorted((i for i in builder.items
+                    if builder.items[i]["type"] == "branch"),
+                   key=lambda i: builder.items[i]["branchId"])
+    if len(by_id) > 1:
+        last = by_id[-1]
+        on_last = set()
+        current = builder.items[last]["one"]
+        while current and current != end_id and current not in on_last:
+            on_last.add(current)
+            current = builder.items[current].get("one")
+        for index, node_id in enumerate(by_id[:-1]):
+            target = by_id[index + 1]
+            current = builder.items[node_id]["one"]
+            seen = set()
+            while current and current != end_id and current not in seen:
+                seen.add(current)
+                item = builder.items[current]
+                if item.get("one") == end_id and current not in on_last:
+                    item["one"] = target
+                    break
+                current = item.get("one")
     return doc
 
 
