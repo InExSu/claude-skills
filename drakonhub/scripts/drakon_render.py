@@ -29,9 +29,30 @@ from drakon_format import (  # noqa: E402
     load_doc,
 )
 
-CELL_W, CELL_H = 220, 110
-BOX_W, BOX_H = 180, 64
-MARGIN = 30
+# Геометрия в стиле DrakonHub: плотные иконки, вертикальный шкворень.
+ICON_W, ICON_H = 196, 52
+COL_PITCH, ROW_PITCH = 230, 78
+MARGIN = 24
+TITLE_H = 34
+
+# Цвета иконок (fill, stroke) — как в экспорте редактора.
+ICON_COLORS = {
+    "branch": ("#eef3f8", "#8fa6bd"),
+    "question": ("#fff7e6", "#d79b00"),
+    "select": ("#fff7e6", "#d79b00"),
+    "end": ("#3c4858", "#3c4858"),
+    "comment": ("#fbfbf5", "#b8b89a"),
+    "callout": ("#fbfbf5", "#b8b89a"),
+    "duration": ("#fbfbf5", "#b8b89a"),
+    "timer": ("#fffdbd", "#c9c98f"),
+    "pause": ("#fffdbd", "#c9c98f"),
+    "ctrlstart": ("#fffdbd", "#c9c98f"),
+    "ctrlend": ("#fffdbd", "#c9c98f"),
+}
+DEFAULT_COLORS = ("#ffffff", "#4a5b6d")
+LINE_COLOR = "#3c4858"
+BACK_COLOR = "#b9c2cf"
+TEXT_COLOR = "#22303d"
 
 
 class Layout:
@@ -103,9 +124,43 @@ class Layout:
                 conv = self.ipdom.get(current)
                 last_row = self.walk(node.get("one"), col, stop=conv)
                 current = conv
+            elif kind == "parbegin":
+                branches, chain, parend = self.par_branches(current)
+                for index, par_id in enumerate(chain):
+                    self.place(par_id, col + index)
+                    self.reserve(col + index, row + 1)
+                for index, branch in enumerate(branches):
+                    self.walk(branch, col + index, stop=parend)
+                deepest = max(self.cursors.get(col + index, row + 1)
+                              for index in range(len(branches)))
+                if isinstance(parend, str) and parend in self.items:
+                    self.pos[parend] = (col, deepest)
+                    self.cursors[col] = deepest + 1
+                    self.max_col = max(self.max_col, col)
+                    current = self.items[parend].get("one")
+                else:
+                    current = None
+                last_row = deepest
             else:
                 current = node.get("one")
         return last_row
+
+    def par_branches(self, start):
+        """Ветки цепочки parbegin, узлы цепочки и узел слияния parend."""
+        branches, chain, tail = [], [], start
+        while isinstance(tail, str) and tail in self.items \
+                and self.items[tail].get("type") == "parbegin":
+            chain.append(tail)
+            branches.append(self.items[tail].get("one"))
+            tail = self.items[tail].get("two")
+        parend, node_id, seen = None, branches[0] if branches else None, set()
+        while isinstance(node_id, str) and node_id in self.items and node_id not in seen:
+            seen.add(node_id)
+            if self.items[node_id].get("type") == "parend":
+                parend = node_id
+                break
+            node_id = self.items[node_id].get("one")
+        return branches, chain, parend
 
 
 def build_layout(doc):
@@ -143,6 +198,19 @@ def grid_size(layout):
     return max(cols, 1), max(rows, 1)
 
 
+def node_center(col, row):
+    """Центр иконки в пикселях (верхний отступ — под заголовок)."""
+    cx = MARGIN + ICON_W // 2 + col * COL_PITCH
+    cy = MARGIN + TITLE_H + ICON_H // 2 + row * ROW_PITCH
+    return cx, cy
+
+
+def node_box(col, row):
+    """Прямоугольник иконки (left, top, right, bottom)."""
+    cx, cy = node_center(col, row)
+    return cx - ICON_W // 2, cy - ICON_H // 2, cx + ICON_W // 2, cy + ICON_H // 2
+
+
 def render_map(doc):
     """Текстовая карта координат: удобна агенту."""
     items = items_of(doc)
@@ -153,32 +221,61 @@ def render_map(doc):
     for node_id in sorted(layout.pos, key=lambda i: (layout.pos[i][1], layout.pos[i][0])):
         node = items[node_id]
         col, row = layout.pos[node_id]
-        x = MARGIN + col * CELL_W + CELL_W // 2
-        y = MARGIN + row * CELL_H + CELL_H // 2
+        cx, cy = node_center(col, row)
         print("%s [%s] (%d, %d) x=%d y=%d %s"
-              % (node_id, node.get("type"), col, row, x, y, node.get("content", "")))
+              % (node_id, node.get("type"), col, row, cx, cy, node.get("content", "")))
 
 
 GLYPH = {
-    "action": ("rect", None),
-    "question": ("diamond", "?"),
-    "select": ("diamond", "$"),
-    "case": ("rect", "= "),
-    "loopbegin": ("rect", "~ "),
-    "loopend": ("rect", "○ "),
-    "arrow-loop": ("dot", "^"),
-    "end": ("round", "END"),
-    "insertion": ("rect", "+ "),
-    "address": ("rect", "& "),
+    "action": "rect",
+    "question": "diamond",
+    "select": "diamond",
+    "case": "rect",
+    "branch": "rect",
+    "loopbegin": "stadium",
+    "loopend": "stadium",
+    "arrow-loop": "dot",
+    "end": "stadium",
+    "insertion": "rect",
+    "address": "rect",
+    "comment": "note",
+    "callout": "note",
+    "timer": "stadium",
+    "pause": "stadium",
+    "ctrlstart": "stadium",
+    "ctrlend": "stadium",
+    "simpleinput": "parallelogram",
+    "simpleoutput": "parallelogram",
+    "input": "parallelogram",
+    "output": "parallelogram",
+    "shelf": "rect",
+    "process": "rect",
+    "parbegin": "rect",
+    "parend": "rect",
+    "header": "rect",
+    "params": "note",
+    "drakon-image": "rect",
 }
 
 
 def node_shape(node):
+    return GLYPH.get(node.get("type"), "rect")
+
+
+def node_colors(node):
+    return ICON_COLORS.get(node.get("type"), DEFAULT_COLORS)
+
+
+def node_text(node):
+    """Подпись иконки с учётом типа (end — без текста, но с подписью)."""
     kind = node.get("type")
-    return GLYPH.get(kind, ("rect", None))
+    content = node.get("content", "")
+    if kind == "end":
+        return content or "Конец"
+    return content
 
 
-def wrap_text(text, width_chars=22):
+def wrap_text(text, width_chars=26):
     words, lines, current = (text or "").split(), [], ""
     for word in words:
         if len(word) > width_chars:
@@ -199,90 +296,161 @@ def wrap_text(text, width_chars=22):
     return lines or [""]
 
 
+def shape_svg(shape, left, top, right, bottom):
+    """SVG-фигура иконки по её типу."""
+    width, height = right - left, bottom - top
+    cx, cy = (left + right) / 2.0, (top + bottom) / 2.0
+    if shape == "diamond":
+        hw, hh = width / 2.0, height / 2.0
+        return ('<polygon points="%g,%g %g,%g %g,%g %g,%g"'
+                % (cx, cy - hh, cx + hw, cy, cx, cy + hh, cx - hw, cy))
+    if shape == "stadium":
+        return ('<rect x="%g" y="%g" width="%g" height="%g" rx="%g"'
+                % (left, top, width, height, height / 2.0))
+    if shape == "parallelogram":
+        skew = height * 0.35
+        return ('<polygon points="%g,%g %g,%g %g,%g %g,%g"'
+                % (left + skew, top, right, top, right - skew, bottom, left, bottom))
+    if shape == "dot":
+        return '<circle cx="%g" cy="%g" r="9"' % (cx, cy)
+    return ('<rect x="%g" y="%g" width="%g" height="%g" rx="3"'
+            % (left, top, width, height))
+
+
+def text_svg(cx, cy, lines, max_lines=3):
+    shown = lines[:max_lines]
+    step = 15
+    start = cy - (len(shown) - 1) * step / 2.0 + 4
+    return "".join(
+        '<text x="%g" y="%g" font-size="12" fill="%s" text-anchor="middle">%s</text>'
+        % (cx, start + index * step, TEXT_COLOR, html.escape(line))
+        for index, line in enumerate(shown))
+
+
+def edge_path(points, back=False):
+    """Ортогональная ломаная по точкам со стрелкой в конце."""
+    color = BACK_COLOR if back else LINE_COLOR
+    dash = ' stroke-dasharray="5 4"' if back else ""
+    d = "M " + " L ".join("%g %g" % (x, y) for x, y in points)
+    return ('<path d="%s" fill="none" stroke="%s" stroke-width="1.6" '
+            'marker-end="url(#arw)"%s/>' % (d, color, dash))
+
+
 def render_svg(doc):
     items = items_of(doc)
     layout = build_layout(doc)
     cols, rows = grid_size(layout)
-    width = MARGIN * 2 + cols * CELL_W
-    height = MARGIN * 2 + rows * CELL_H
-    parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d">' % (width, height),
-             '<rect width="100%%" height="100%%" fill="#ffffff"/>']
+    channel_x = MARGIN + ICON_W + (cols - 1) * COL_PITCH + 24
+    width = channel_x + MARGIN
+    height = MARGIN * 2 + TITLE_H + rows * ROW_PITCH
     headers = [n for n in items.values() if n.get("type") == "header"]
-    if headers and headers[0].get("content"):
-        parts.append('<text x="%d" y="22" font-size="16" font-weight="bold" '
-                     'font-family="sans-serif">%s</text>'
-                     % (MARGIN, html.escape(headers[0]["content"])))
-    edges = []
-    for node_id, (col, row) in layout.pos.items():
-        node = items[node_id]
-        kind = node.get("type")
-        cx = MARGIN + col * CELL_W + CELL_W // 2
-        cy = MARGIN + row * CELL_H + CELL_H // 2
-        target = node.get("one")
-        if isinstance(target, str) and target in layout.pos:
-            tcol, trow = layout.pos[target]
-            tx = MARGIN + tcol * CELL_W + CELL_W // 2
-            ty = MARGIN + trow * CELL_H + CELL_H // 2
-            x1, y1 = cx, cy + BOX_H // 2
-            if trow > row or (trow == row and tcol != col):
-                edges.append('<line x1="%d" y1="%d" x2="%d" y2="%d" '
-                             'stroke="#000" stroke-width="2"/>' % (x1, y1, tx, ty - BOX_H // 2))
+    title = headers[0].get("content", "") if headers else ""
+
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" '
+        'font-family="Arial, Helvetica, sans-serif">' % (width, height),
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<defs><marker id="arw" markerWidth="9" markerHeight="7" refX="8" refY="3.5" '
+        'orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="%s"/></marker></defs>'
+        % LINE_COLOR,
+    ]
+    if title:
+        parts.append('<text x="%d" y="%d" font-size="15" font-weight="bold" '
+                     'fill="%s">%s</text>'
+                     % (MARGIN, MARGIN + 14, TEXT_COLOR, html.escape(title)))
+
+    gap = 12.0
+
+    def edge(from_id, to_id):
+        if from_id not in layout.pos or to_id not in layout.pos:
+            return
+        fcol, frow = layout.pos[from_id]
+        tcol, trow = layout.pos[to_id]
+        fx1, fy1, fx2, fy2 = node_box(fcol, frow)
+        tx1, ty1, tx2, ty2 = node_box(tcol, trow)
+        fcx, fcy = (fx1 + fx2) / 2.0, (fy1 + fy2) / 2.0
+        tcx, tcy = (tx1 + tx2) / 2.0, (ty1 + ty2) / 2.0
+        if tcol == fcol:
+            if trow == frow + 1:
+                parts.append(edge_path([(fcx, fy2), (tcx, ty1)]))
+            elif trow > frow:
+                parts.append(edge_path(
+                    [(fcx, fy2), (fcx, fy2 + gap), (channel_x, fy2 + gap),
+                     (channel_x, ty1 - gap), (tcx, ty1 - gap), (tcx, ty1)]))
             else:
-                edges.append('<line x1="%d" y1="%d" x2="%d" y2="%d" '
-                             'stroke="#800" stroke-width="2" stroke-dasharray="6,4"/>' % (
-                                 cx + BOX_W // 2, cy, tx + BOX_W // 2, ty))
+                parts.append(edge_path(
+                    [(fcx, fy1), (fcx, fy1 - gap), (channel_x, fy1 - gap),
+                     (channel_x, ty2 + gap), (tcx, ty2 + gap), (tcx, ty2)], back=True))
+            return
+        trunk = (tx1 - gap) if tcol > fcol else (tx2 + gap)
+        if trow == frow:
+            x_from = fx2 if tcol > fcol else fx1
+            x_to = tx1 if tcol > fcol else tx2
+            parts.append(edge_path([(x_from, fcy), (x_to, tcy)]))
+        elif trow > frow:
+            parts.append(edge_path(
+                [(fcx, fy2), (fcx, fy2 + gap), (trunk, fy2 + gap),
+                 (trunk, ty1), (tcx, ty1)]))
+        else:
+            parts.append(edge_path(
+                [(fcx, fy1), (fcx, fy1 - gap), (trunk, fy1 - gap),
+                 (trunk, ty2), (tcx, ty2)], back=True))
+
+    for node_id, node in items.items():
+        if node_id not in layout.pos:
+            continue
+        kind = node.get("type")
+        if kind in ("comment", "callout", "duration", "header"):
+            continue
         if kind == "question":
-            for field in ("one", "two"):
-                target = node.get(field)
-                if isinstance(target, str) and target in layout.pos and field == "two":
-                    tcol, trow = layout.pos[target]
-                    tx = MARGIN + tcol * CELL_W + CELL_W // 2
-                    ty = MARGIN + trow * CELL_H + CELL_H // 2
-                    edges.append('<line x1="%d" y1="%d" x2="%d" y2="%d" '
-                                 'stroke="#000" stroke-width="2"/>' % (
-                                     cx + BOX_W // 2, cy, tx, ty - BOX_H // 2))
-        if kind == "select":
+            yes, no = (node.get("one"), node.get("two")) if node.get("flag1") \
+                else (node.get("two"), node.get("one"))
+            edge(node_id, yes)
+            edge(node_id, no)
+        elif kind == "select":
             case = node.get("one")
-            while isinstance(case, str) and case in layout.pos \
+            while isinstance(case, str) and case in items \
                     and items[case].get("type") == "case":
-                tcol, trow = layout.pos[case]
-                tx = MARGIN + tcol * CELL_W + CELL_W // 2
-                ty = MARGIN + trow * CELL_H + CELL_H // 2
-                edges.append('<line x1="%d" y1="%d" x2="%d" y2="%d" '
-                             'stroke="#000" stroke-width="2"/>' % (
-                                 cx + BOX_W // 2, cy, tx, ty - BOX_H // 2))
+                edge(node_id, case)
                 case = items[case].get("two")
-    parts.extend(edges)
-    for node_id, (col, row) in layout.pos.items():
+        elif kind == "parbegin":
+            edge(node_id, node.get("one"))
+            if node.get("two"):
+                edge(node_id, node.get("two"))
+        else:
+            edge(node_id, node.get("one"))
+
+    # --- иконки (поверх рёбер) ---
+    for node_id, (col, row) in sorted(layout.pos.items(),
+                                      key=lambda pair: (pair[1][1], pair[1][0])):
         node = items[node_id]
         kind = node.get("type")
-        shape, mark = node_shape(node)
-        cx = MARGIN + col * CELL_W + CELL_W // 2
-        cy = MARGIN + row * CELL_H + CELL_H // 2
-        raw = (mark or "") + node.get("content", "")
-        text_lines = wrap_text(raw)
-        shown = text_lines[:3]
-        texts = "".join(
-            '<text x="%d" y="%d" font-size="12" text-anchor="middle" '
-            'font-family="sans-serif">%s</text>' % (
-                cx, cy - (len(shown) - 1) * 8 + index * 16, html.escape(line))
-            for index, line in enumerate(shown))
-        if shape == "dot":
-            parts.append('<circle cx="%d" cy="%d" r="10" fill="#fff" '
-                         'stroke="#000" stroke-width="2"/>%s' % (cx, cy, texts))
-        elif shape == "diamond":
-            hw, hh = BOX_W // 2 + 8, BOX_H // 2 + 6
-            parts.append('<polygon points="%d,%d %d,%d %d,%d %d,%d" fill="#fff" '
-                         'stroke="#000" stroke-width="2"/>%s' % (
-                             cx, cy - hh, cx + hw, cy, cx, cy + hh, cx - hw, cy, texts))
-        elif shape == "round":
-            parts.append('<rect x="%d" y="%d" width="%d" height="%d" rx="20" fill="#fff" '
-                         'stroke="#000" stroke-width="2"/>%s' % (
-                             cx - BOX_W // 2, cy - BOX_H // 2, BOX_W, BOX_H, texts))
-        else:
-            parts.append('<rect x="%d" y="%d" width="%d" height="%d" fill="#fff" '
-                         'stroke="#000" stroke-width="2"/>%s' % (
-                             cx - BOX_W // 2, cy - BOX_H // 2, BOX_W, BOX_H, texts))
+        if kind == "header":
+            continue
+        left, top, right, bottom = node_box(col, row)
+        fill, stroke = node_colors(node)
+        shape = node_shape(node)
+        cx, cy = node_center(col, row)
+        if kind == "comment" or kind == "callout" or kind == "duration":
+            # примечание: компактная плашка слева, без текста в потоке
+            lines = wrap_text(node.get("content", ""))
+            parts.append(shape_svg(shape, left, top, right, bottom)
+                         + ' fill="%s" stroke="%s" stroke-width="1.2" stroke-dasharray="4 3"/>'
+                         % (fill, stroke))
+            parts.append(text_svg(cx, cy, lines, max_lines=2))
+            continue
+        if kind == "end":
+            parts.append(shape_svg(shape, left, top, right, bottom)
+                         + ' fill="%s" stroke="%s" stroke-width="1.5"/>' % (fill, stroke))
+            parts.append('<text x="%g" y="%g" font-size="13" fill="#ffffff" '
+                         'text-anchor="middle">%s</text>'
+                         % (cx, cy + 4, html.escape(node_text(node))))
+            continue
+        lines = wrap_text(node_text(node))
+        parts.append(shape_svg(shape, left, top, right, bottom)
+                     + ' fill="%s" stroke="%s" stroke-width="1.5"/>' % (fill, stroke))
+        parts.append(text_svg(cx, cy, lines))
     parts.append("</svg>")
     return "\n".join(parts)
 

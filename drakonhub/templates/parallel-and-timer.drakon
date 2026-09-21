@@ -11,77 +11,63 @@
             "content": "Параллельное согласование"
         },
         "3": {
-            "type": "action",
+            "type": "pause",
             "style": "",
-            "content": "Собрать итог",
+            "content": "Пауза перед завершением",
             "one": "1"
         },
         "4": {
-            "type": "parend",
+            "type": "action",
             "style": "",
+            "content": "Собрать итог",
             "one": "3"
         },
         "5": {
-            "type": "action",
+            "type": "parend",
             "style": "",
-            "content": "Согласовать с юристом",
             "one": "4"
         },
         "6": {
             "type": "action",
             "style": "",
-            "content": "Согласовать с бухгалтерией",
-            "one": "4"
+            "content": "Согласовать с юристом",
+            "one": "5"
         },
         "7": {
-            "type": "parbegin",
+            "type": "action",
             "style": "",
-            "one": "6"
+            "content": "Согласовать с бухгалтерией",
+            "one": "5"
         },
         "8": {
             "type": "parbegin",
             "style": "",
-            "one": "5",
-            "content": "Параллельно",
-            "two": "7"
+            "one": "7"
         },
         "9": {
-            "type": "action",
+            "type": "parbegin",
             "style": "",
-            "content": "Записать таймаут в лог",
-            "one": "1"
+            "one": "6",
+            "content": "Параллельно",
+            "two": "8"
         },
         "10": {
-            "type": "pause",
-            "style": "",
-            "content": "Пауза перед повтором",
-            "one": "9"
-        },
-        "11": {
-            "type": "question",
-            "style": "",
-            "flag1": 1,
-            "content": "Оба ответа получены?",
-            "one": "8",
-            "two": "10"
-        },
-        "12": {
             "type": "timer",
             "style": "",
             "content": "Ждать ответа 30 секунд",
-            "one": "11"
+            "one": "9"
         },
-        "13": {
+        "11": {
             "type": "action",
             "style": "",
             "content": "Отправить запрос на согласование",
-            "one": "12"
+            "one": "10"
         },
-        "14": {
+        "12": {
             "type": "branch",
             "style": "",
             "branchId": 0,
-            "one": "13"
+            "one": "11"
         }
     },
     "style": "",
