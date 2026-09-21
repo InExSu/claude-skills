@@ -43,7 +43,7 @@ jobs:
         working-directory: drakonhub
         run: |
           set -euo pipefail
-          for file in templates/*.drakon; do
+          for file in templates/*.drakon templates/*.graf templates/*.seq templates/*.sm; do
             echo "::group::check $file"
             python3 scripts/drakon_tool.py check "$file"
             echo "::endgroup::"
@@ -53,7 +53,7 @@ jobs:
         working-directory: drakonhub
         run: |
           set -euo pipefail
-          for file in templates/*.drakon; do
+          for file in templates/*.drakon templates/*.seq templates/*.sm; do
             python3 scripts/drakon_tool.py read "$file" > /dev/null
           done
 
@@ -82,3 +82,14 @@ jobs:
           python3 scripts/drakon_render.py map templates/minimal.drakon > /dev/null
           test -s /tmp/silhouette.svg
           test -s /tmp/silhouette.mmd
+
+      - name: Render auxiliary Mermaid (sequence and state)
+        working-directory: drakonhub
+        run: |
+          set -euo pipefail
+          python3 scripts/drakon_render.py mermaid templates/oauth2-flow.seq /tmp/oauth2-flow.mmd
+          python3 scripts/drakon_render.py mermaid templates/order-state.sm /tmp/order-state.mmd
+          test -s /tmp/oauth2-flow.mmd
+          test -s /tmp/order-state.mmd
+          head -1 /tmp/oauth2-flow.mmd | grep -q sequenceDiagram
+          head -1 /tmp/order-state.mmd | grep -q stateDiagram-v2

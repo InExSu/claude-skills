@@ -28,6 +28,16 @@ from drakon_format import (  # noqa: E402
     items_of,
     load_doc,
 )
+from sequence_format import (  # noqa: E402
+    SeqError,
+    check_sequence,
+    sequence_to_mermaid,
+)
+from state_format import (  # noqa: E402
+    StateError,
+    check_state,
+    state_to_mermaid,
+)
 
 # Геометрия в стиле DrakonHub: плотные иконки, вертикальный шкворень.
 ICON_W, ICON_H = 196, 52
@@ -588,13 +598,16 @@ def render_mermaid(doc):
 
 
 def cmd_mermaid(src, dst):
+    lowered = src.lower()
+    if lowered.endswith(".seq") or lowered.endswith(".sm"):
+        return cmd_mermaid_aux(src, dst)
     try:
         doc = load_doc(src)
     except ValueError as exc:
         print("ошибка: %s" % exc, file=sys.stderr)
         return 1
     if doc.get("type") != "drakon":
-        print("ошибка: %s: mermaid только для .drakon" % src, file=sys.stderr)
+        print("ошибка: %s: mermaid для .drakon, .seq или .sm" % src, file=sys.stderr)
         return 1
     errors, _ = check_drakon(doc, src)
     if errors:
@@ -606,6 +619,35 @@ def cmd_mermaid(src, dst):
         handle.write(text + "\n")
     print("OK: %s -> %s (%d иконок)"
           % (src, dst, len(doc["items"])))
+    return 0
+
+
+def cmd_mermaid_aux(src, dst):
+    """Mermaid для вспомогательных форматов .seq (sequenceDiagram) и .sm (stateDiagram)."""
+    try:
+        with open(src, encoding="utf-8") as handle:
+            text = handle.read()
+    except FileNotFoundError:
+        print("ошибка: файл не найден: %s" % src, file=sys.stderr)
+        return 1
+    is_seq = src.lower().endswith(".seq")
+    try:
+        if is_seq:
+            errors, _ = check_sequence(text, src)
+        else:
+            errors, _ = check_state(text, src)
+        if errors:
+            for message in errors:
+                print("ошибка: %s" % message, file=sys.stderr)
+            return 1
+        out = sequence_to_mermaid(text) if is_seq else state_to_mermaid(text)
+    except (SeqError, StateError) as exc:
+        print("ошибка: %s: %s" % (src, exc), file=sys.stderr)
+        return 1
+    with open(dst, "w", encoding="utf-8") as handle:
+        handle.write(out + "\n")
+    kind = "sequenceDiagram" if is_seq else "stateDiagram-v2"
+    print("OK: %s -> %s (%s)" % (src, dst, kind))
     return 0
 
 
@@ -670,7 +712,7 @@ def main(argv):
         return cmd_map(argv[2])
     print("использование:")
     print("  drakon_render.py svg     <вход.drakon> <выход.svg>")
-    print("  drakon_render.py mermaid <вход.drakon> <выход.mmd>")
+    print("  drakon_render.py mermaid <вход.drakon|.seq|.sm> <выход.mmd>")
     print("  drakon_render.py map     <вход.drakon>")
     return 2
 

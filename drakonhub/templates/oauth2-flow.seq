@@ -1,0 +1,24 @@
+# OAuth 2.0: обмен authorization code на токен
+participant User
+participant Browser
+participant AuthServer
+participant ResourceServer
+
+User -> Browser: открыть приложение
+Browser -> AuthServer: GET /authorize?code_challenge=...
+AuthServer --> Browser: форма входа
+Browser -> AuthServer: логин и согласие
+alt код выдан
+  AuthServer --> Browser: 302 redirect_uri?code=...
+  Browser -> AuthServer: POST /token + code_verifier
+  AuthServer --> Browser: 200 access_token, refresh_token
+  loop обновление токена
+    Browser -> AuthServer: POST /token + refresh_token
+    AuthServer --> Browser: 200 access_token
+  end
+  Browser -> ResourceServer: GET /api с access_token
+  ResourceServer --> Browser: 200 защищённый ресурс
+else доступ запрещён
+  AuthServer --> Browser: 403 access_denied
+end
+note over AuthServer: код живёт 10 минут

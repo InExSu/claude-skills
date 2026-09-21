@@ -144,6 +144,7 @@ python3 scripts/drakon_try.py stack  out.drakon   # стек места зави
 | [reference/file-format.md](reference/file-format.md) | формат `.drakon` и `.graf`: типы, поля, инварианты |
 | [reference/engine-rules.md](reference/engine-rules.md) | правила построения силуэта, проверенные движком |
 | [reference/code-generator.md](reference/code-generator.md) | ограничения генератора псевдокода (`drakongen.js`) |
+| [reference/sequence-and-state.md](reference/sequence-and-state.md) | вспомогательные форматы `.seq` и `.sm` |
 | `scripts/drakon_tool.py` | `check` (валидация) и `read` (псевдокод) |
 | `scripts/drakon_dsl.py` | `to-drakon`, `to-dsl`, `roundtrip` |
 | `scripts/drakon_render.py` | `svg` (картинка), `mermaid` (.mmd) и `map` (карта координат) |
@@ -156,6 +157,52 @@ python3 scripts/drakon_try.py stack  out.drakon   # стек места зави
 | `templates/parallel-and-timer.drakon` | параллельные процессы и таймеры |
 | `templates/workout.dsl` | пример DSL |
 | `templates/mind-map.graf` | пример ментальной карты |
+| `templates/oauth2-flow.seq` | пример диаграммы последовательности |
+| `templates/order-state.sm` | пример машины состояний |
+| `scripts/sequence_format.py` | `.seq` → Mermaid `sequenceDiagram` |
+| `scripts/state_format.py` | `.sm` → Mermaid `stateDiagram-v2` |
+
+## Вспомогательные форматы: `.seq` и `.sm`
+
+**ДРАКОН — основной формат.** Он описывает поток управления и проверяется
+жёстко. Но две вещи в него не ложатся: линии жизни между участниками
+и состояния как сущности. Для них — вспомогательные форматы, цель которых
+Mermaid (GitHub рендерит его в Markdown).
+
+Применяй `.seq`, когда важен **порядок сообщений между участниками**
+(протоколы, API, OAuth). Применяй `.sm`, когда нужен **жизненный цикл**
+(состояния и переходы: заказ, сессия, задача).
+
+```
+# .seq: диаграмма последовательности
+participant User
+participant Server
+User -> Server: запрос
+Server --> User: ответ
+alt успех
+  Server -> Server: записать
+else ошибка
+  Server --> User: 500
+end
+
+# .sm: машина состояний
+[*] --> Created: создать
+Created --> Paid: оплатить
+Paid --> [*]
+```
+
+```bash
+python3 scripts/drakon_tool.py check templates/oauth2-flow.seq
+python3 scripts/drakon_render.py mermaid templates/oauth2-flow.seq out.mmd
+python3 scripts/drakon_tool.py check templates/order-state.sm
+python3 scripts/drakon_render.py mermaid templates/order-state.sm out.mmd
+```
+
+Правила `.seq`: участники объявлены до использования; `alt` обязан иметь
+`else`; блоки (`alt`/`opt`/`loop`/`par`) закрыты `end`.
+Правила `.sm`: есть начальное состояние `[*] -->`; каждая цель перехода
+объявлена; `state { }` закрыт.
+Для `.seq`/`.sm` нет `roundtrip` и `.drakon`-JSON — это Mermaid-цели.
 
 ## Семантика иконок (кратко)
 

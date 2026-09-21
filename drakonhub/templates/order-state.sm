@@ -1,0 +1,10 @@
+# Жизненный цикл заказа
+[*] --> Created: создать заказ
+Created --> Paid: оплата получена
+Created --> Cancelled: отмена до оплаты
+Paid --> Shipped: отгрузить
+Paid --> Refunded: вернуть деньги
+Shipped --> Delivered: доставка
+Delivered --> [*]
+Cancelled --> [*]
+Refunded --> [*]
