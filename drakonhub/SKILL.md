@@ -111,8 +111,9 @@ python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon
 #   → OK: графы совпали (6 узлов)
 
 # Раскладка и рендер
-python3 scripts/drakon_render.py svg templates/silhouette.drakon out.svg
-python3 scripts/drakon_render.py map templates/silhouette.drakon
+python3 scripts/drakon_render.py svg     templates/silhouette.drakon out.svg  # картинка
+python3 scripts/drakon_render.py mermaid templates/silhouette.drakon out.mmd  # Mermaid
+python3 scripts/drakon_render.py map     templates/silhouette.drakon          # карта координат
 
 # Строгая проверка реальным движком (импорт → открытие → рендер)
 python3 scripts/drakon_try.py render out.drakon   # OK nodes=N | HANG | ERROR <текст>
@@ -140,7 +141,7 @@ python3 scripts/drakon_try.py stack  out.drakon   # стек места зави
 | [reference/code-generator.md](reference/code-generator.md) | ограничения генератора псевдокода (`drakongen.js`) |
 | `scripts/drakon_tool.py` | `check` (валидация) и `read` (псевдокод) |
 | `scripts/drakon_dsl.py` | `to-drakon`, `to-dsl`, `roundtrip` |
-| `scripts/drakon_render.py` | `svg` (картинка) и `map` (карта координат) |
+| `scripts/drakon_render.py` | `svg` (картинка), `mermaid` (.mmd) и `map` (карта координат) |
 | `scripts/drakon_try.py` | прогон реальным движком: `OK` / `HANG` / `ERROR` |
 | `scripts/drakon_format.py` | общее ядро (парсинг, проверка, DSL-модель) |
 | `templates/minimal.drakon` | линейная диаграмма, 6 узлов |

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""drakon_render: раскладка силуэта в сетку и рендер.
+"""drakon_render: раскладка силуэта в сетку, SVG и Mermaid.
 
 Использование (из папки скилла):
-  python3 scripts/drakon_render.py svg diagram.drakon out.svg  # картинка
-  python3 scripts/drakon_render.py map diagram.drakon          # карта координат
+  python3 scripts/drakon_render.py svg diagram.drakon out.svg      # картинка
+  python3 scripts/drakon_render.py map diagram.drakon              # карта координат
+  python3 scripts/drakon_render.py mermaid diagram.drakon out.mmd  # диаграмма Mermaid
 
 Правила раскладки: поток сверху вниз, главная ветка — слева,
 ответвления (нет-ветки вопросов, варианты выбора, тела циклов) — вправо.
@@ -14,6 +15,7 @@
 
 import html
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -285,6 +287,143 @@ def render_svg(doc):
     return "\n".join(parts)
 
 
+def mermaid_id(node_id):
+    """Стабильный безопасный идентификатор для Mermaid."""
+    return "n" + re.sub(r"[^0-9A-Za-z_]", "_", str(node_id))
+
+
+def mermaid_escape(text):
+    """Экранировать текст для подписи узла Mermaid."""
+    text = (text or "").replace("\\", "\\\\").replace('"', "#quot;")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def mermaid_node(node_id, node):
+    """Строка объявления узла Mermaid: id + форма + подпись."""
+    kind = node.get("type")
+    label = mermaid_escape(node.get("content", ""))
+    if kind == "end":
+        return '%s(["%s"])' % (mermaid_id(node_id), label or "КОНЕЦ")
+    if kind == "question":
+        return '%s{"%s"}' % (mermaid_id(node_id), label)
+    if kind == "select":
+        return '%s{"%s"}' % (mermaid_id(node_id), label)
+    if kind == "case":
+        return '%s["= %s"]' % (mermaid_id(node_id), label)
+    if kind == "loopbegin":
+        return '%s(["~ %s"])' % (mermaid_id(node_id), label)
+    if kind == "loopend":
+        return '%s(["~ /цикл"])' % mermaid_id(node_id)
+    if kind == "arrow-loop":
+        return '%s(("^"))' % mermaid_id(node_id)
+    if kind == "insertion":
+        return '%s["+ %s"]' % (mermaid_id(node_id), label)
+    if kind == "address":
+        return '%s["&amp; %s"]' % (mermaid_id(node_id), label)
+    if kind in ("simpleinput", "input"):
+        return '%s[/"%s"/]' % (mermaid_id(node_id), label)
+    if kind in ("simpleoutput", "output"):
+        return '%s[\\"%s"\\]' % (mermaid_id(node_id), label)
+    if kind == "branch" and not label:
+        return '%s["Ветка"]' % mermaid_id(node_id)
+    return '%s["%s"]' % (mermaid_id(node_id), label)
+
+
+def mermaid_resolve(items, node_id):
+    """Пройти сквозь цепочки комментариев к первому узлу потока."""
+    seen = set()
+    while isinstance(node_id, str) and node_id in items and node_id not in seen:
+        seen.add(node_id)
+        if items[node_id].get("type") != "comment":
+            return node_id
+        node_id = items[node_id].get("one")
+    return node_id
+
+
+def render_mermaid(doc):
+    """Диаграмма ДРАКОН -> текст Mermaid (flowchart TD)."""
+    items = items_of(doc)
+    lines = ["flowchart TD"]
+    headers = [n for n in items.values() if n.get("type") == "header"]
+    if headers and headers[0].get("content"):
+        lines.append('  HEADER(["%s"])' % mermaid_escape(headers[0]["content"]))
+    nodes = [(i, n) for i, n in items.items()
+             if n.get("type") in FLOW_TYPES]
+    branches = [(i, n) for i, n in items.items() if n.get("type") == "branch"]
+    branch_ids = {i for i, _ in branches}
+
+    def sort_key(pair):
+        bid = pair[1].get("branchId")
+        return (bid if isinstance(bid, int) and not isinstance(bid, bool) else 10 ** 9,
+                pair[0])
+
+    declared = set()
+
+    def declare(node_id, node):
+        if node_id in declared:
+            return
+        declared.add(node_id)
+        lines.append("  " + mermaid_node(node_id, node))
+
+    # узлы: сначала ветки, затем остальные
+    for node_id, node in sorted(branches, key=sort_key):
+        declare(node_id, node)
+    for node_id, node in nodes:
+        if node_id not in branch_ids:
+            declare(node_id, node)
+
+    def edge(source, target, label=None):
+        target = mermaid_resolve(items, target)
+        if not isinstance(target, str) or target not in items:
+            return
+        if target in ("header",):
+            return
+        arrow = " -- %s --> " % label if label else " --> "
+        lines.append("  %s%s%s" % (mermaid_id(source), arrow, mermaid_id(target)))
+
+    for node_id, node in items.items():
+        kind = node.get("type")
+        if kind in ("comment", "callout", "duration", "header"):
+            continue
+        if kind == "question":
+            yes_id, no_id = (node.get("one"), node.get("two")) if node.get("flag1") \
+                else (node.get("two"), node.get("one"))
+            edge(node_id, yes_id, "Да")
+            edge(node_id, no_id, "Нет")
+        elif kind == "select":
+            case = node.get("one")
+            while isinstance(case, str) and case in items \
+                    and items[case].get("type") == "case":
+                edge(node_id, case)
+                case = items[case].get("two")
+        else:
+            edge(node_id, node.get("one"))
+    return "\n".join(lines)
+
+
+def cmd_mermaid(src, dst):
+    try:
+        doc = load_doc(src)
+    except ValueError as exc:
+        print("ошибка: %s" % exc, file=sys.stderr)
+        return 1
+    if doc.get("type") != "drakon":
+        print("ошибка: %s: mermaid только для .drakon" % src, file=sys.stderr)
+        return 1
+    errors, _ = check_drakon(doc, src)
+    if errors:
+        for message in errors:
+            print("ошибка: %s" % message, file=sys.stderr)
+        return 1
+    text = render_mermaid(doc)
+    with open(dst, "w", encoding="utf-8") as handle:
+        handle.write(text + "\n")
+    print("OK: %s -> %s (%d иконок)"
+          % (src, dst, len(doc["items"])))
+    return 0
+
+
 def cmd_svg(src, dst):
     try:
         doc = load_doc(src)
@@ -340,11 +479,14 @@ def cmd_map(src):
 def main(argv):
     if len(argv) == 4 and argv[1] == "svg":
         return cmd_svg(argv[2], argv[3])
+    if len(argv) == 4 and argv[1] == "mermaid":
+        return cmd_mermaid(argv[2], argv[3])
     if len(argv) == 3 and argv[1] == "map":
         return cmd_map(argv[2])
     print("использование:")
-    print("  drakon_render.py svg <вход.drakon> <выход.svg>")
-    print("  drakon_render.py map <вход.drakon>")
+    print("  drakon_render.py svg     <вход.drakon> <выход.svg>")
+    print("  drakon_render.py mermaid <вход.drakon> <выход.mmd>")
+    print("  drakon_render.py map     <вход.drakon>")
     return 2
 
 

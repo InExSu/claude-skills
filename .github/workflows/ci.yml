@@ -78,5 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/drakon_render.py svg templates/silhouette.drakon /tmp/silhouette.svg
+          python3 scripts/drakon_render.py mermaid templates/silhouette.drakon /tmp/silhouette.mmd
           python3 scripts/drakon_render.py map templates/minimal.drakon > /dev/null
           test -s /tmp/silhouette.svg
+          test -s /tmp/silhouette.mmd

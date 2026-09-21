@@ -185,6 +185,7 @@ cd drakonhub
 for f in templates/*.drakon; do python3 scripts/drakon_tool.py check "$f"; done
 python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon
 python3 scripts/drakon_render.py svg templates/silhouette.drakon /tmp/out.svg
+python3 scripts/drakon_render.py mermaid templates/silhouette.drakon /tmp/out.mmd
 ```
 
 ---
