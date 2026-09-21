@@ -114,8 +114,8 @@ claude-skills/
 │   ├── SKILL.md
 │   ├── reference/{file-format,engine-rules,code-generator}.md
 │   ├── scripts/{drakon_format,drakon_tool,drakon_dsl,drakon_render,drakon_try}.py
-│   └── templates/{minimal,choice-and-loop,silhouette,select}.drakon
-│                  {workout.dsl,mind-map.graf}
+│   └── templates/{minimal,choice-and-loop,silhouette,select,parallel-and-timer}.drakon
+│                  {workout,parallel-and-timer}.dsl {mind-map.graf,silhouette.mmd}
 ├── hungarian-notation/SKILL.md
 ├── if-condition-refactor/SKILL.md
 ├── noosphere/SKILL.md

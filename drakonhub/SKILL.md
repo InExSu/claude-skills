@@ -85,6 +85,11 @@ $ Что дальше?                         выбор (select)
 % 2 мин                               длительность (ребёнок действия)
 << Ждать событие / >> Ответить        ввод / вывод (simpleinput / simpleoutput)
 + Вставка / & Адрес                   insertion / address
+!timer Ждать 30 секунд                таймер (timer)
+!pause Пауза                          пауза (pause)
+!ctrl Начало секции / !endctrl Конец  критическая секция (ctrlstart / ctrlend)
+!par Параллельно                      параллельный блок (parbegin/parend)
+  ветка:                              ветка параллельного блока
 ```
 
 Экранирование: `\n` внутри строки — перевод строки в тексте иконки,
@@ -148,6 +153,7 @@ python3 scripts/drakon_try.py stack  out.drakon   # стек места зави
 | `templates/choice-and-loop.drakon` | вопрос + цикл с возвратом |
 | `templates/silhouette.drakon` | силуэт из трёх веток |
 | `templates/select.drakon` | выбор из вариантов |
+| `templates/parallel-and-timer.drakon` | параллельные процессы и таймеры |
 | `templates/workout.dsl` | пример DSL |
 | `templates/mind-map.graf` | пример ментальной карты |
 
@@ -161,6 +167,9 @@ python3 scripts/drakon_try.py stack  out.drakon   # стек места зави
 | `case` | `one` (тело), `two` (следующий) | вариант; у последнего нет `two` |
 | `branch` | `one` | ветка силуэта; `branchId` 0 — главная |
 | `loopbegin` / `loopend` | `one` | скобки цикла |
+| `parbegin` / `parend` | `one`, `two` (цепочка) | параллельные процессы |
+| `timer` / `pause` | `one` | ожидание / пауза |
+| `ctrlstart` / `ctrlend` | `one` | критическая секция |
 | `arrow-loop` | `one`, без текста | явный переход (обычно назад) |
 | `comment` | `one` (к кому) | пометка, в потоке прозрачна |
 | `duration` | никуда (через `action.side`) | подпись длительности |

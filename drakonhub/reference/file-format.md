@@ -98,6 +98,27 @@
 `shelf` / `process` принимаются проверкой, в DSL каноникализуются
 в действия.
 
+### `timer` / `pause` / `ctrlstart` / `ctrlend`
+
+Таймеры и критические секции редактора (`content` + `one`).
+В DSL — `!timer`, `!pause`, `!ctrl`, `!endctrl`. Движок рисует их
+(`renderTimer`, `renderCtrlStart`, `renderCtrlEnd`).
+
+### `parbegin` / `parend` — параллельные процессы
+
+```json
+"pb1": {"type": "parbegin", "one": "a", "two": "pb2"},
+"pb2": {"type": "parbegin", "one": "b"},
+"a":   {"type": "action", "content": "Согласовать с юристом", "one": "pe"},
+"b":   {"type": "action", "content": "Согласовать с бухгалтерией", "one": "pe"},
+"pe":  {"type": "parend", "one": "30"}
+```
+
+- Цепочка `parbegin` через `two`: каждая ветка — её `one`, последняя
+  ветка без `two`; все ветки сходятся в `parend`, `parend.one` — продолжение.
+- В DSL — блок `!par` с подблоками `ветка:`.
+- В меню редактора — «Parallel process» / «Параллельный процесс».
+
 ## 3. Внепотоковые иконки
 
 ### `comment` — комментарий

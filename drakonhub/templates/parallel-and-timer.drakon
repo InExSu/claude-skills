@@ -1,0 +1,89 @@
+{
+    "type": "drakon",
+    "items": {
+        "1": {
+            "type": "end",
+            "style": ""
+        },
+        "2": {
+            "type": "header",
+            "style": "",
+            "content": "Параллельное согласование"
+        },
+        "3": {
+            "type": "action",
+            "style": "",
+            "content": "Собрать итог",
+            "one": "1"
+        },
+        "4": {
+            "type": "parend",
+            "style": "",
+            "one": "3"
+        },
+        "5": {
+            "type": "action",
+            "style": "",
+            "content": "Согласовать с юристом",
+            "one": "4"
+        },
+        "6": {
+            "type": "action",
+            "style": "",
+            "content": "Согласовать с бухгалтерией",
+            "one": "4"
+        },
+        "7": {
+            "type": "parbegin",
+            "style": "",
+            "one": "6"
+        },
+        "8": {
+            "type": "parbegin",
+            "style": "",
+            "one": "5",
+            "content": "Параллельно",
+            "two": "7"
+        },
+        "9": {
+            "type": "action",
+            "style": "",
+            "content": "Записать таймаут в лог",
+            "one": "1"
+        },
+        "10": {
+            "type": "pause",
+            "style": "",
+            "content": "Пауза перед повтором",
+            "one": "9"
+        },
+        "11": {
+            "type": "question",
+            "style": "",
+            "flag1": 1,
+            "content": "Оба ответа получены?",
+            "one": "8",
+            "two": "10"
+        },
+        "12": {
+            "type": "timer",
+            "style": "",
+            "content": "Ждать ответа 30 секунд",
+            "one": "11"
+        },
+        "13": {
+            "type": "action",
+            "style": "",
+            "content": "Отправить запрос на согласование",
+            "one": "12"
+        },
+        "14": {
+            "type": "branch",
+            "style": "",
+            "branchId": 0,
+            "one": "13"
+        }
+    },
+    "style": "",
+    "name": "Параллельное согласование"
+}

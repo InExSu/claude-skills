@@ -28,6 +28,12 @@ ICON_TYPES = {
     "comment", "loopbegin", "loopend", "arrow-loop", "duration", "callout",
     "insertion", "address", "simpleinput", "simpleoutput",
     "input", "output", "shelf", "process",
+    # таймеры и критические секции (движок DrakonHub)
+    "timer", "pause", "ctrlstart", "ctrlend",
+    # параллельные процессы
+    "junction", "parbegin", "parend",
+    # служебные и mind-map
+    "params", "drakon-image", "idea", "ridea", "conclusion",
 }
 
 # Поля-ссылки на другие узлы (обязательные). "side" — опциональная ссылка action.
@@ -49,13 +55,23 @@ LINK_FIELDS = {
     "output": ("one",),
     "shelf": ("one",),
     "process": ("one",),
+    "timer": ("one",),
+    "pause": ("one",),
+    "ctrlstart": ("one",),
+    "ctrlend": ("one",),
+    "parbegin": ("one",),
+    "parend": ("one",),
 }
 
 # Узлы, участвующие в потоке управления (достижимость от веток, выход в end).
-FLOW_TYPES = set(ICON_TYPES) - {"header", "comment", "callout", "duration"}
+FLOW_TYPES = set(ICON_TYPES) - {
+    "header", "comment", "callout", "duration", "params", "drakon-image",
+    "idea", "ridea", "conclusion",
+}
 
 # Узлы без исходящих рёбер.
-SINK_TYPES = {"header", "end", "callout", "duration"}
+SINK_TYPES = {"header", "end", "callout", "duration", "params", "drakon-image",
+              "idea", "ridea", "conclusion"}
 
 # Слова, запрещённые в вопросах по правилам ДРАКОН (вопрос — атомарный).
 QUESTION_FORBIDDEN = (
@@ -384,7 +400,7 @@ class DslError(Exception):
     pass
 
 
-MARKER_STARTS = set("#>*@$=~?%+&^<>")
+MARKER_STARTS = set("#>*@$=~?%+&^<>!")
 
 
 def escape_content(text):
@@ -454,6 +470,18 @@ def parse_dsl(text):
             kind, content = "insertion", body[1:].strip()
         elif body.startswith("&"):
             kind, content = "address", body[1:].strip()
+        elif body.startswith("!pause "):
+            kind, content = "pause", body[7:].strip()
+        elif body.startswith("!timer "):
+            kind, content = "timer", body[7:].strip()
+        elif body.startswith("!endctrl "):
+            kind, content = "ctrlend", body[9:].strip()
+        elif body.startswith("!ctrl "):
+            kind, content = "ctrlstart", body[6:].strip()
+        elif body == "!par" or body.startswith("!par "):
+            kind, content = "par", body[4:].strip()
+        elif body.rstrip(":").strip().lower() in ("ветка", "branch") and body.rstrip().endswith(":"):
+            kind, content = "parbranch", ""
         elif body in ("^", "^ "):
             kind, content = "jump", ""
         elif body.rstrip(":").strip().lower() in ("да", "нет", "yes", "no") and body.rstrip().endswith(":"):
@@ -582,12 +610,32 @@ def build_construct(builder, line, cont):
             fields["side"] = side
         return builder.add("action", **fields)
     if kind in ("insertion", "address", "simpleinput", "simpleoutput",
-                 "input", "output", "shelf", "process"):
+                 "input", "output", "shelf", "process",
+                 "timer", "pause", "ctrlstart", "ctrlend"):
         if line.children:
             raise DslError("%r не имеет вложенных строк" % kind)
         native = {"simpleinput": "simpleinput", "simpleoutput": "simpleoutput",
-                  "input": "input", "output": "output"}.get(kind, "action")
+                  "input": "input", "output": "output"}.get(kind, kind)
         return builder.add(native, content=text, one=cont)
+    if kind == "par":
+        parend = builder.add("parend", one=cont)
+        branches = []
+        for child in line.children:
+            if child.kind != "parbranch":
+                raise DslError("у параллельного блока только ветка: подблоки")
+            entry = build_block(builder, child.children, parend) or parend
+            branches.append(entry)
+        if len(branches) < 2:
+            raise DslError("у параллельного блока минимум две ветки")
+        prev = None
+        for index in reversed(range(len(branches))):
+            fields = {"one": branches[index]}
+            if index == 0 and text:
+                fields["content"] = text
+            if prev is not None:
+                fields["two"] = prev
+            prev = builder.add("parbegin", **fields)
+        return prev
     if kind == "branch":
         entry = build_block(builder, line.children, cont)
         return builder.add("branch", branchId=0, content=text, one=entry or cont)
@@ -732,16 +780,48 @@ class Serializer:
             self.emit_comments(current, indent)
             content = node.get("content", "")
             if kind in ("action", "insertion", "address", "simpleinput",
-                          "simpleoutput", "input", "output", "shelf", "process"):
+                          "simpleoutput", "input", "output", "shelf", "process",
+                          "timer", "pause", "ctrlstart", "ctrlend"):
                 prefix = {"action": "", "insertion": "+ ", "address": "& ",
                           "simpleinput": "<< ", "simpleoutput": ">> ",
-                          "input": "<< ", "output": ">> "}.get(kind, "")
+                          "input": "<< ", "output": ">> ",
+                          "timer": "!timer ", "pause": "!pause ",
+                          "ctrlstart": "!ctrl ", "ctrlend": "!endctrl "}.get(kind, "")
                 self.emit(indent, prefix + escape_content(content))
                 side = node.get("side")
                 if isinstance(side, str) and side in self.items:
                     self.emitted.add(side)
                     self.emit(indent + 1, "% " + escape_content(
                         self.items[side].get("content", "")))
+                current = node.get("one")
+            elif kind == "parbegin":
+                self.emit(indent, "!par " + escape_content(content))
+                # цепочка parbegin: ветки — их one; слияние — parend, куда ведут ветки
+                par_nodes, branches, tail = [], [], current
+                while isinstance(tail, str) and tail in self.items \
+                        and self.items[tail].get("type") == "parbegin" \
+                        and tail not in par_nodes:
+                    par_nodes.append(tail)
+                    branches.append(self.items[tail].get("one"))
+                    tail = self.items[tail].get("two")
+                conv = None
+                for entry in branches:
+                    target = self.items.get(entry, {}).get("one") if entry else None
+                    if isinstance(target, str) and target in self.items \
+                            and self.items[target].get("type") == "parend":
+                        conv = target
+                        break
+                if conv is None:
+                    conv = self.ipdom.get(current)
+                for par_id in par_nodes:
+                    self.emitted.add(par_id)
+                for entry in branches:
+                    self.emit(indent + 1, "ветка:")
+                    self.ser_subtree(entry, conv, indent + 2)
+                if isinstance(conv, str) and conv in self.items:
+                    self.emitted.add(conv)
+                current = conv
+            elif kind == "parend":
                 current = node.get("one")
             elif kind == "arrow-loop":
                 self.emit(indent, "^")
