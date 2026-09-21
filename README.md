@@ -162,7 +162,6 @@ claude-skills/
 │   ├── scripts/check_skills.py
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── AGENTS.md                  ← machine-readable notes for AI agents consuming this repo
-├── gh.sh                      ← add-all / commit / push helper
 ├── constant-naming-convention/
 │   └── SKILL.md
 ├── drakonhub/
@@ -230,16 +229,6 @@ cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 2. **Opt-in skills** never fire on their own — they require an explicit activation token: `@hungarian` for Hungarian notation, `@spaghetti` for the RWD decomposition.
 3. **Combine deliberately.** `tdd-bugfix` + `quality-tests`, or `spaghetti-rwd` + `noosphere` + `rwd-chain`, form a coherent workflow: decompose, agree on state, wire the pipeline.
 4. **Point at a file.** For `drakonhub`, referencing a concrete `.drakon` file plus *"check it"* or *"render it"* selects the right script.
-
-### Commit helper (this repository's local convention)
-
-The `gh.sh` helper in the repository root stages everything, commits and pushes in one call:
-
-```bash
-./gh.sh "add DRAKON skills"    # git add -A . && git commit -m "$1" && git push
-```
-
-Use it only from this repository — and double-check `git status` before running it, since it adds **all** changes including unreviewed ones.
 
 ### Automated checks
 
