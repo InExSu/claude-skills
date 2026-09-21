@@ -45,6 +45,7 @@ class SeqError(Exception):
 def parse_seq(text):
     """Разобрать .seq. Вернуть (items, errors). items — список dict."""
     items, errors = [], []
+    # стек открытых блоков: [{"keyword": ..., "has_else": bool}]
     stack = []
     participants = {}
     title_seen = False
@@ -64,20 +65,24 @@ def parse_seq(text):
             if not stack:
                 errors.append("строка %d: end без открытого блока" % lineno)
             else:
-                stack.pop()
+                frame = stack.pop()
+                if frame["keyword"] == "alt" and not frame["has_else"]:
+                    errors.append("строка %d: закрывается alt без else" % lineno)
                 items.append({"kind": "end", "line": lineno})
             continue
         match = ELSE_RE.match(line)
         if match:
-            if not stack or stack[-1] != "alt":
+            if not stack or stack[-1]["keyword"] != "alt":
                 errors.append("строка %d: else только внутри alt" % lineno)
+            else:
+                stack[-1]["has_else"] = True
             items.append({"kind": "else", "text": (match.group(1) or "").strip(),
                           "line": lineno})
             continue
         match = BLOCK_LABEL.match(line)
         if match:
             keyword = match.group(1).lower()
-            stack.append(keyword)
+            stack.append({"keyword": keyword, "has_else": False})
             items.append({"kind": "block", "keyword": keyword,
                           "text": match.group(2).strip(), "line": lineno})
             continue
@@ -116,28 +121,12 @@ def parse_seq(text):
                           "line": lineno})
             continue
         errors.append("строка %d: не разобрана: %r" % (lineno, line))
-    for keyword in stack:
-        errors.append("блок %s не закрыт (нет end)" % keyword)
+    for frame in stack:
+        errors.append("блок %s не закрыт (нет end)" % frame["keyword"])
     if not any(i["kind"] == "message" for i in items):
         errors.append("нет ни одного сообщения")
     if not any(i["kind"] == "participant" for i in items):
         errors.append("нет ни одного участника (participant)")
-    # alt обязан иметь else (требование Mermaid)
-    depth_alt = 0
-    has_else = {}
-    for index, item in enumerate(items):
-        if item["kind"] == "block" and item["keyword"] == "alt":
-            depth_alt += 1
-            has_else[index] = False
-        elif item["kind"] == "else" and depth_alt:
-            for key in reversed(list(has_else)):
-                if not has_else[key]:
-                    has_else[key] = True
-                    break
-        elif item["kind"] == "end" and depth_alt:
-            pass
-    if has_else and not all(has_else.values()):
-        errors.append("у блока alt должен быть else")
     return items, errors
 
 
