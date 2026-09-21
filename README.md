@@ -105,6 +105,7 @@ claude-skills/
 │   ├── scripts/check_skills.py
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── AGENTS.md                  ← machine-readable notes for AI agents consuming this repo
+├── install-links.sh           ← symlink every skill into ~/.claude/skills
 ├── constant-naming-convention/
 │   └── SKILL.md
 ├── drakonhub/
@@ -157,6 +158,12 @@ To install a single skill, copy just its folder — it is self-contained (its re
 
 ```bash
 cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
+```
+
+Or symlink every skill from a clone, so `git pull` updates them in place:
+
+```bash
+./install-links.sh    # links this repo's skills into ~/.claude/skills (SKILLS_TARGET to override)
 ```
 
 ### Using a skill with another agent

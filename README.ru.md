@@ -107,6 +107,7 @@ claude-skills/
 │   ├── scripts/check_skills.py
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── AGENTS.md                  ← машиночитаемые заметки для AI-агентов, потребляющих репозиторий
+├── install-links.sh           ← слинковать все скиллы в ~/.claude/skills
 ├── constant-naming-convention/
 │   └── SKILL.md
 ├── drakonhub/
@@ -159,6 +160,12 @@ cp -R /tmp/claude-skills/*/ .claude/skills/
 
 ```bash
 cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
+```
+
+Либо слинкуйте все скиллы из клона симлинками, чтобы `git pull` обновлял их на месте:
+
+```bash
+./install-links.sh    # линкует скиллы репозитория в ~/.claude/skills (SKILLS_TARGET — переопределить)
 ```
 
 ### Использование скилла с другим агентом
