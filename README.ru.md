@@ -4,7 +4,7 @@
 
 **Коллекция [Agent Skills](https://agentskills.io) для AI-агентов** — стандарты кода, дисциплина тестирования, архитектурные паттерны, проектирование агентов и инструменты для диаграмм DRAKON. Подходит любому агенту, реализующему открытый стандарт, в том числе [Claude Code](https://claude.com/claude-code).
 
-[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-14-blue?style=flat-square)](#-каталог-скиллов)
+[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-15-blue?style=flat-square)](#-каталог-скиллов)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-под-микроскопом)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-каталог-скиллов)

@@ -1,0 +1,65 @@
+{
+    "type": "drakon",
+    "items": {
+        "1": {
+            "type": "end",
+            "style": ""
+        },
+        "2": {
+            "type": "header",
+            "content": "Шкала",
+            "style": ""
+        },
+        "3": {
+            "type": "branch",
+            "branchId": 0,
+            "one": "4",
+            "style": ""
+        },
+        "4": {
+            "type": "select",
+            "content": "Сколько алкоголя?",
+            "one": "5",
+            "style": ""
+        },
+        "5": {
+            "type": "case",
+            "content": "0 - 250",
+            "one": "27",
+            "two": "8",
+            "style": ""
+        },
+        "8": {
+            "type": "case",
+            "content": "250 - 400",
+            "one": "30",
+            "two": "36",
+            "style": ""
+        },
+        "36": {
+            "type": "case",
+            "content": "",
+            "one": "51",
+            "style": ""
+        },
+        "27": {
+            "type": "action",
+            "content": "Без наказания",
+            "one": "1",
+            "style": ""
+        },
+        "30": {
+            "type": "action",
+            "content": "Штраф",
+            "one": "1",
+            "style": ""
+        },
+        "51": {
+            "type": "action",
+            "content": "Лишение прав",
+            "one": "1",
+            "style": ""
+        }
+    },
+    "style": ""
+}

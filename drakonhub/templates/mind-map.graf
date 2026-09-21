@@ -1,0 +1,41 @@
+{
+    "type": "graf",
+    "items": {
+        "1": {
+            "type": "idea",
+            "content": "Тестирование",
+            "parent": "root",
+            "treeType": "treeview",
+            "ordinal": 0
+        },
+        "2": {
+            "type": "idea",
+            "content": "Модульные тесты",
+            "parent": "1",
+            "treeType": "treeview",
+            "ordinal": 0
+        },
+        "3": {
+            "type": "idea",
+            "content": "Каждый модуль отдельно",
+            "parent": "2",
+            "treeType": "treeview",
+            "ordinal": 0
+        },
+        "4": {
+            "type": "idea",
+            "content": "Красный тест первым",
+            "parent": "2",
+            "treeType": "treeview",
+            "ordinal": 1
+        },
+        "5": {
+            "type": "idea",
+            "content": "Интеграция",
+            "parent": "1",
+            "treeType": "treeview",
+            "ordinal": 1
+        }
+    },
+    "style": ""
+}

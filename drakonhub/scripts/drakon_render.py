@@ -1,483 +1,352 @@
 #!/usr/bin/env python3
-"""Раскладка .drakon по правилам силуэта и два вида вывода.
+"""drakon_render: раскладка силуэта в сетку и рендер.
 
-    python3 drakon_render.py svg <in.drakon> <out.svg>   # картинка для человека
-    python3 drakon_render.py map <in.drakon>             # карта координат для агента
+Использование (из папки скилла):
+  python3 scripts/drakon_render.py svg diagram.drakon out.svg  # картинка
+  python3 scripts/drakon_render.py map diagram.drakon          # карта координат
 
-Движок один: считает сетку (ветка -> колонка, иконка -> строка), потом
-отрисовывает её либо в SVG, либо в текст.
+Правила раскладки: поток сверху вниз, главная ветка — слева,
+ответвления (нет-ветки вопросов, варианты выбора, тела циклов) — вправо.
+«Чем правее, тем хуже».
 
-Раскладка:
-  * заголовки всех веток - на строке 0, слева направо по branchId;
-  * вертел ветки идёт строго вниз по её колонке;
-  * правая ветка вопроса (two) уходит вправо от поддерева one;
-  * переход на другую ветку - пунктирная стрелка к её заголовку,
-    внутрь чужой ветки не рекурсируем (иначе бесконечный цикл).
-
-Два вида "посмотреть":
-  * svg - чтобы человек увидел схему без DrakonHub;
-  * map - таблица координат: агент может проверить правила DRAKON
-    (старт слева сверху, ветвление вправо, нет пересечений) простым чтением.
+Только стандартная библиотека.
 """
 
-import json
+import html
+import os
 import sys
-import textwrap
 
-CELL_W = 230      # ширина колонки, px
-CELL_H = 78       # высота строки, px
-PAD = 24
-BOX_W = CELL_W - 34
-BOX_H = CELL_H - 26
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-QUESTION = "question"
-TERMINALS = ("branch", "end")
+from drakon_format import (  # noqa: E402
+    DslError,
+    FLOW_TYPES,
+    check_drakon,
+    compute_ipdom,
+    items_of,
+    load_doc,
+)
 
+CELL_W, CELL_H = 220, 110
+BOX_W, BOX_H = 180, 64
+MARGIN = 30
 
-def strip_tags(text):
-    out, in_tag = [], False
-    for ch in text:
-        if ch == "<":
-            in_tag = True
-        elif ch == ">":
-            in_tag = False
-        elif not in_tag:
-            out.append(ch)
-    return "".join(out)
-
-
-def plain(item):
-    content = item.get("content") or item.get("text") or ""
-    return " ".join(strip_tags(str(content)).split())
-
-
-# --------------------------------------------------------------- раскладка
 
 class Layout:
-    def __init__(self, diagram):
-        self.items = diagram.get("items", {})
-        self.nodes = []          # (iid, col, row, item)
-        self.links = []          # (from_iid, to_iid, kind) kind: one|two|ref
-        self.cols = 0
-        self.rows = 0
-        self.owner = {}          # iid -> branchId, чья это клетка
-        self.cur_branch = None
-        self.pending_loopend = []   # (loopend_id, col, row) циклов, тело которых рисуем
+    def __init__(self, items):
+        self.items = items
+        self.pos = {}      # id -> (col, row)
+        self.cursors = {}  # col -> следующая свободная строка
+        self.max_col = -1
+        self.ipdom = {}
 
-    # -- размеры поддерева -------------------------------------------
+    def place(self, node_id, col):
+        row = self.cursors.get(col, 0)
+        self.pos[node_id] = (col, row)
+        self.cursors[col] = row + 1
+        self.max_col = max(self.max_col, col)
+        return row
 
-    def measure(self, iid, path):
-        """(ширина в колонках, высота в строках) для цепочки от iid."""
-        if not iid or iid in path:
-            return (0, 0)
-        item = self.items.get(iid)
-        if not isinstance(item, dict):
-            return (0, 0)
-        typ = item.get("type")
-        if typ == "branch":
-            # переход на чужую ветку: стрелка идёт к её заголовку на строке 0,
-            # отдельной клетки не занимает
-            return (0, 0)
-        # возврат на loopend текущего цикла: стрелка, а не клетка
-        if iid in self.pending_loopend:
-            return (0, 0)
-        if typ == "end":
-            return (1, 1)
-        if typ == "duration":
-            return (0, 0)
-        path = path | {iid}
+    def reserve(self, col, row):
+        self.cursors[col] = max(self.cursors.get(col, 0), row)
 
-        if typ == QUESTION:
-            w1, h1 = self.measure(item.get("one"), path)
-            w2, h2 = self.measure(item.get("two"), path)
-            return (max(1, w1) + max(0, w2), 1 + max(h1, h2))
-
-        if typ == "select":
-            # варианты раскладываются вправо друг за другом
-            w, h = 1, 0
-            case = item.get("one")
-            while case and case not in path:
-                node = self.items.get(case, {})
-                wc, hc = self.measure(node.get("one"), path | {case})
-                w += max(1, wc)
-                h = max(h, hc)
-                case = node.get("two")
-            return (w, 1 + h)
-
-        if typ == "loopbegin":
-            w, h = self.measure(item.get("one"), path)
-            end_id = self.find_loopend(iid)
-            wa, ha = self.measure(self.items.get(end_id, {}).get("one"), path)
-            return (max(1, w, wa), 1 + h + 1 + ha)
-
-        w, h = self.measure(item.get("one"), path)
-        return (max(1, w), 1 + h)
-
-    def find_loopend(self, begin_id):
-        first = self.items.get(begin_id, {}).get("one")
-        if not first:
-            return None
-
-        def walk(cur, depth, seen):
-            if cur is None or cur in seen:
-                return None
-            seen = seen | {cur}
-            item = self.items.get(cur)
-            if not isinstance(item, dict):
-                return None
-            typ = item.get("type")
-            if typ in TERMINALS:
-                return None
-            if typ == "loopend":
-                return cur if depth == 0 else None
-            d = depth + 1 if typ == "loopbegin" else depth
-            for field in ("one", "two"):
-                found = walk(item.get(field), d, seen)
-                if found:
-                    return found
-            return None
-
-        return walk(first, 0, frozenset())
-
-    # -- размещение ---------------------------------------------------
-
-    def place(self, iid, col, row, path):
-        if not iid or iid in path:
-            return 1
-        item = self.items.get(iid)
-        if not isinstance(item, dict):
-            return 1
-        typ = item.get("type")
-        if typ == "duration":
-            return 0
-
-        self.cols = max(self.cols, col + 1)
-        self.rows = max(self.rows, row + 1)
-
-        if typ == "end":
-            self.nodes.append((iid, col, row, item))
-            self.owner[iid] = self.cur_branch
-            return 1
-        if typ == "branch":
-            # заголовок ветки уже нарисован на строке 0 - только стрелка
-            return 0
-        # возврат на loopend текущего цикла: клетка занята самим loopend,
-        # из тела к нему идёт только стрелка
-        if iid in self.pending_loopend:
-            return 0
-
-        path = path | {iid}
-        self.nodes.append((iid, col, row, item))
-        self.owner[iid] = self.cur_branch
-
-        if typ == QUESTION:
-            w1, _ = self.measure(item.get("one"), path)
-            self.link(iid, item.get("one"), "one")
-            self.link(iid, item.get("two"), "two")
-            self.place(item.get("one"), col, row + 1, path)
-            self.place(item.get("two"), col + max(1, w1), row + 1, path)
-            return 1
-
-        if typ == "select":
-            self.nodes[-1] = (iid, col, row, item)
-            case = item.get("one")
-            offset = 1
-            while case and case not in path:
-                node = self.items.get(case, {})
-                self.nodes.append((case, col + offset, row + 1, node))
-                self.owner[case] = self.cur_branch
-                self.cols = max(self.cols, col + offset + 1)
-                self.rows = max(self.rows, row + 2)
-                self.link(case, node.get("one"), "one")
-                wc, _ = self.measure(node.get("one"), path | {case})
-                self.place(node.get("one"), col + offset, row + 2, path | {case})
-                offset += max(1, wc)
-                case = node.get("two")
-            return 1
-
-        if typ == "loopbegin":
-            end_id = self.find_loopend(iid)
-            if end_id:
-                self.pending_loopend.append(end_id)
-            w, h = self.measure(item.get("one"), path)
-            self.link(iid, item.get("one"), "one")
-            self.place(item.get("one"), col, row + 1, path)
-            if end_id:
-                self.pending_loopend.pop()
-                end_item = self.items[end_id]
-                self.nodes.append((end_id, col, row + 1 + h, end_item))
-                self.owner[end_id] = self.cur_branch
-                self.rows = max(self.rows, row + 2 + h)
-                self.link(end_id, end_item.get("one"), "one")
-                self.place(end_item.get("one"), col, row + 2 + h, path)
-            return 1 + h + 1
-
-        self.link(iid, item.get("one"), "one")
-        return 1 + self.place(item.get("one"), col, row + 1, path)
-
-    def link(self, src, dst, kind):
-        if src and dst:
-            self.links.append((src, dst, kind))
-
-    # -- общий вход ----------------------------------------------------
-
-    def build(self):
-        pairs = [(it.get("branchId", 0), iid)
-                 for iid, it in self.items.items()
-                 if isinstance(it, dict) and it.get("type") == "branch"]
-        col = 0
-        for branch_id, bid in sorted(pairs, key=lambda p: p[0]):
-            item = self.items[bid]
-            self.cur_branch = branch_id
-            self.nodes.append((bid, col, 0, item))
-            self.owner[bid] = branch_id
-            self.cols = max(self.cols, col + 1)
-            self.rows = max(self.rows, 1)
-            self.link(bid, item.get("one"), "one")
-            w, _ = self.measure(item.get("one"), {bid})
-            self.place(item.get("one"), col, 1, {bid})
-            col += max(1, w) + 1
-        return self
+    def walk(self, node_id, col, stop=None):
+        """Идти по one вниз; ответвления — вправо. Возвращает последний ряд."""
+        current, last_row = node_id, 0
+        while current and current != stop and current not in self.pos:
+            node = self.items.get(current)
+            if node is None:
+                break
+            kind = node.get("type")
+            if kind == "end":
+                row = self.place(current, col)
+                return row
+            if kind in ("comment", "callout", "duration", "header"):
+                current = node.get("one")
+                continue
+            if kind == "loopend":
+                row = self.place(current, col)
+                current = node.get("one")
+                last_row = row
+                continue
+            if kind == "branch":
+                current = node.get("one")
+                continue
+            row = self.place(current, col)
+            last_row = row
+            if kind in ("action", "insertion", "address", "arrow-loop"):
+                current = node.get("one")
+            elif kind == "question":
+                conv = self.ipdom.get(current)
+                if node.get("flag1"):
+                    main, side = node.get("one"), node.get("two")
+                else:
+                    main, side = node.get("two"), node.get("one")
+                self.reserve(col + 1, row + 1)
+                self.walk(side, col + 1, stop=conv)
+                current = main
+            elif kind == "select":
+                conv = self.ipdom.get(current)
+                case = node.get("one")
+                self.reserve(col + 1, row + 1)
+                while isinstance(case, str) and case in self.items \
+                        and self.items[case].get("type") == "case" \
+                        and case not in self.pos:
+                    self.place(case, col + 1)
+                    self.reserve(col + 2, self.cursors[col + 1])
+                    self.walk(self.items[case].get("one"), col + 2, stop=conv)
+                    case = self.items[case].get("two")
+                current = conv
+            elif kind == "loopbegin":
+                conv = self.ipdom.get(current)
+                last_row = self.walk(node.get("one"), col, stop=conv)
+                current = conv
+            else:
+                current = node.get("one")
+        return last_row
 
 
-# --------------------------------------------------------------- SVG
+def build_layout(doc):
+    items = items_of(doc)
+    ends = [i for i, n in items.items() if n.get("type") == "end"]
+    flow_ids = [i for i, n in items.items() if n.get("type") in FLOW_TYPES]
+    layout = Layout(items)
+    layout.ipdom = compute_ipdom(items, flow_ids, ends[0] if ends else None)
+    branches = [(i, n) for i, n in items.items() if n.get("type") == "branch"]
 
-def esc(text):
-    return (text.replace("&", "&amp;").replace("<", "&lt;")
-                .replace(">", "&gt;").replace('"', "&quot;"))
+    def key(pair):
+        bid = pair[1].get("branchId")
+        return (bid if isinstance(bid, int) and not isinstance(bid, bool) else 10 ** 9,
+                pair[0])
+
+    col = 0
+    for node_id, branch in sorted(branches, key=key):
+        if node_id in layout.pos:
+            continue
+        layout.walk(branch.get("one"), col)
+        col = layout.max_col + 1
+    for node_id, node in items.items():
+        if node.get("type") in FLOW_TYPES and node.get("type") != "end" \
+                and node_id not in layout.pos:
+            layout.walk(node_id, col)
+            col = layout.max_col + 1
+    return layout
 
 
-def wrap(text, per_line=26):
-    if not text:
-        return [""]
-    lines = textwrap.wrap(text, per_line) or [""]
-    return lines[:4]
+def grid_size(layout):
+    cols = layout.max_col + 1
+    rows = 0
+    for _, row in layout.pos.values():
+        rows = max(rows, row + 1)
+    return max(cols, 1), max(rows, 1)
 
 
-class Svg:
-    def __init__(self, layout, diagram):
-        self.L = layout
-        self.diagram = diagram
-        self.pos = {}
-        self.out = []
+def render_map(doc):
+    """Текстовая карта координат: удобна агенту."""
+    items = items_of(doc)
+    layout = build_layout(doc)
+    headers = [n for n in items.values() if n.get("type") == "header"]
+    if headers and headers[0].get("content"):
+        print("# " + headers[0]["content"])
+    for node_id in sorted(layout.pos, key=lambda i: (layout.pos[i][1], layout.pos[i][0])):
+        node = items[node_id]
+        col, row = layout.pos[node_id]
+        x = MARGIN + col * CELL_W + CELL_W // 2
+        y = MARGIN + row * CELL_H + CELL_H // 2
+        print("%s [%s] (%d, %d) x=%d y=%d %s"
+              % (node_id, node.get("type"), col, row, x, y, node.get("content", "")))
 
-    def box(self, iid):
-        for n in self.L.nodes:
-            if n[0] == iid:
-                _, col, row, _ = n
-                return (PAD + col * CELL_W, PAD + row * CELL_H,
-                        BOX_W, BOX_H)
-        return None
 
-    def render(self):
-        L = self.L
-        width = PAD * 2 + L.cols * CELL_W
-        height = PAD * 2 + L.rows * CELL_H
-        o = self.out
-        o.append('<?xml version="1.0" encoding="UTF-8"?>')
-        o.append('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" '
-                 'viewBox="0 0 %d %d" font-family="Arial, Helvetica, sans-serif">'
-                 % (width, height, width, height))
-        o.append('<rect width="100%" height="100%" fill="#ffffff"/>')
-        o.append('<defs><marker id="arw" markerWidth="9" markerHeight="7" '
-                 'refX="8" refY="3.5" orient="auto">'
-                 '<polygon points="0 0, 9 3.5, 0 7" fill="#3c4858"/></marker></defs>')
+GLYPH = {
+    "action": ("rect", None),
+    "question": ("diamond", "?"),
+    "select": ("diamond", "$"),
+    "case": ("rect", "= "),
+    "loopbegin": ("rect", "~ "),
+    "loopend": ("rect", "○ "),
+    "arrow-loop": ("dot", "^"),
+    "end": ("round", "END"),
+    "insertion": ("rect", "+ "),
+    "address": ("rect", "& "),
+}
 
-        for src, dst, kind in L.links:
-            self.draw_link(src, dst, kind)
 
-        for iid, col, row, item in L.nodes:
-            self.draw_node(iid, col, row, item)
+def node_shape(node):
+    kind = node.get("type")
+    return GLYPH.get(kind, ("rect", None))
 
-        o.append("</svg>")
-        return "\n".join(o)
 
-    def draw_link(self, src, dst, kind):
-        a, b = self.box(src), self.box(dst)
-        if not a or not b:
-            return
-        ax, ay, aw, ah = a
-        bx, by, bw, bh = b
-        x1, y1 = ax + aw / 2, ay + ah
-        x2, y2 = bx + bw / 2, by
-        item = self.L.items.get(dst, {})
-        ref = item.get("type") == "branch"
-        color = "#b9c2cf" if ref else "#3c4858"
-        dash = ' stroke-dasharray="5 4"' if ref else ""
-        if x1 == x2:
-            d = "M %g %g L %g %g" % (x1, y1, x2, y2 - 3)
+def wrap_text(text, width_chars=22):
+    words, lines, current = (text or "").split(), [], ""
+    for word in words:
+        if len(word) > width_chars:
+            if current:
+                lines.append(current)
+                current = ""
+            while len(word) > width_chars:
+                lines.append(word[:width_chars])
+                word = word[width_chars:]
+            current = word
+        elif len(current) + 1 + len(word) <= width_chars:
+            current = (current + " " + word).strip()
         else:
-            mid = y1 + (y2 - y1) / 2
-            d = "M %g %g L %g %g L %g %g L %g %g" % (x1, y1, x1, mid, x2, mid, x2, y2 - 3)
-        self.out.append('<path d="%s" fill="none" stroke="%s" stroke-width="1.6"%s '
-                        'marker-end="url(#arw)"/>' % (d, color, dash))
-
-    def draw_node(self, iid, col, row, item):
-        x = PAD + col * CELL_W
-        y = PAD + row * CELL_H
-        typ = item.get("type")
-        text = plain(item)
-        o = self.out
-
-        if typ == "branch":
-            o.append('<rect x="%g" y="%g" width="%g" height="%g" rx="4" '
-                     'fill="#eef3f8" stroke="#8fa6bd" stroke-width="1.5"/>'
-                     % (x, y, BOX_W, BOX_H))
-            self.text_block(x, y, text or ("Ветка %s" % item.get("branchId")), bold=True)
-            return
-        if typ == "end":
-            o.append('<rect x="%g" y="%g" width="%g" height="%g" rx="%g" '
-                     'fill="#3c4858" stroke="#3c4858"/>'
-                     % (x + BOX_W / 4, y + BOX_H / 4, BOX_W / 2, BOX_H / 2, BOX_H / 4))
-            return
-
-        if typ == QUESTION:
-            cx, cy = x + BOX_W / 2, y + BOX_H / 2
-            o.append('<polygon points="%g,%g %g,%g %g,%g %g,%g" fill="#fff7e6" '
-                     'stroke="#d79b00" stroke-width="1.5"/>'
-                     % (cx, y, x + BOX_W, cy, cx, y + BOX_H, x, cy))
-            self.text_block(x, y, text, width=BOX_W - 28)
-            return
-
-        if typ == "case":
-            o.append('<rect x="%g" y="%g" width="%g" height="%g" rx="3" '
-                     'fill="#f2f8ff" stroke="#6f9fd8" stroke-width="1.2"/>'
-                     % (x, y, BOX_W, BOX_H * 0.7))
-            self.text_block(x, y, text or "остальные", width=BOX_W - 16, small=True)
-            return
-
-        if typ == "select":
-            o.append('<rect x="%g" y="%g" width="%g" height="%g" rx="3" '
-                     'fill="#f2f8ff" stroke="#6f9fd8" stroke-width="1.2"/>'
-                     % (x, y, BOX_W, BOX_H * 0.7))
-            self.text_block(x, y, text, width=BOX_W - 16, small=True)
-            return
-
-        if typ == "comment":
-            o.append('<rect x="%g" y="%g" width="%g" height="%g" rx="3" '
-                     'fill="#fbfbf5" stroke="#b8b89a" stroke-dasharray="4 3"/>'
-                     % (x, y, BOX_W, BOX_H * 0.7))
-            self.text_block(x, y, text, width=BOX_W - 16, small=True)
-            return
-
-        fill = "#ffffff"
-        stroke = "#4a5b6d"
-        if typ in ("loopbegin", "loopend"):
-            fill, stroke = "#eef7ee", "#4f8f4f"
-        elif typ == "insertion":
-            fill, stroke = "#f6f0fb", "#8a63b8"
-        elif typ == "arrow-loop":
-            fill, stroke = "#fdf3f3", "#c07a7a"
-        elif typ in ("simpleinput", "simpleoutput"):
-            fill, stroke = "#f0fbfb", "#3f9c9c"
-
-        o.append('<rect x="%g" y="%g" width="%g" height="%g" rx="4" fill="%s" '
-                 'stroke="%s" stroke-width="1.5"/>' % (x, y, BOX_W, BOX_H, fill, stroke))
-        self.text_block(x, y, text)
-
-        side = item.get("side")
-        if side and side in self.L.items:
-            o.append('<text x="%g" y="%g" font-size="11" fill="#7a8794">[%s]</text>'
-                     % (x + BOX_W + 6, y + BOX_H / 2 + 4, esc(plain(self.L.items[side]))))
-
-    def text_block(self, x, y, text, bold=False, width=None, small=False):
-        width = width or BOX_W - 16
-        size = 11 if small else 12
-        lines = wrap(text, int(width / (size * 0.55)))
-        weight = " font-weight=\"bold\"" if bold else ""
-        cy = y + BOX_H / 2 - (len(lines) - 1) * (size + 3) / 2 + 4
-        for i, line in enumerate(lines):
-            self.out.append('<text x="%g" y="%g" font-size="%d" fill="#22303d"%s>%s</text>'
-                            % (x + 8, cy + i * (size + 3), size, weight, esc(line)))
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [""]
 
 
-# --------------------------------------------------------------- карта
+def render_svg(doc):
+    items = items_of(doc)
+    layout = build_layout(doc)
+    cols, rows = grid_size(layout)
+    width = MARGIN * 2 + cols * CELL_W
+    height = MARGIN * 2 + rows * CELL_H
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d">' % (width, height),
+             '<rect width="100%%" height="100%%" fill="#ffffff"/>']
+    headers = [n for n in items.values() if n.get("type") == "header"]
+    if headers and headers[0].get("content"):
+        parts.append('<text x="%d" y="22" font-size="16" font-weight="bold" '
+                     'font-family="sans-serif">%s</text>'
+                     % (MARGIN, html.escape(headers[0]["content"])))
+    edges = []
+    for node_id, (col, row) in layout.pos.items():
+        node = items[node_id]
+        kind = node.get("type")
+        cx = MARGIN + col * CELL_W + CELL_W // 2
+        cy = MARGIN + row * CELL_H + CELL_H // 2
+        target = node.get("one")
+        if isinstance(target, str) and target in layout.pos:
+            tcol, trow = layout.pos[target]
+            tx = MARGIN + tcol * CELL_W + CELL_W // 2
+            ty = MARGIN + trow * CELL_H + CELL_H // 2
+            x1, y1 = cx, cy + BOX_H // 2
+            if trow > row or (trow == row and tcol != col):
+                edges.append('<line x1="%d" y1="%d" x2="%d" y2="%d" '
+                             'stroke="#000" stroke-width="2"/>' % (x1, y1, tx, ty - BOX_H // 2))
+            else:
+                edges.append('<line x1="%d" y1="%d" x2="%d" y2="%d" '
+                             'stroke="#800" stroke-width="2" stroke-dasharray="6,4"/>' % (
+                                 cx + BOX_W // 2, cy, tx + BOX_W // 2, ty))
+        if kind == "question":
+            for field in ("one", "two"):
+                target = node.get(field)
+                if isinstance(target, str) and target in layout.pos and field == "two":
+                    tcol, trow = layout.pos[target]
+                    tx = MARGIN + tcol * CELL_W + CELL_W // 2
+                    ty = MARGIN + trow * CELL_H + CELL_H // 2
+                    edges.append('<line x1="%d" y1="%d" x2="%d" y2="%d" '
+                                 'stroke="#000" stroke-width="2"/>' % (
+                                     cx + BOX_W // 2, cy, tx, ty - BOX_H // 2))
+        if kind == "select":
+            case = node.get("one")
+            while isinstance(case, str) and case in layout.pos \
+                    and items[case].get("type") == "case":
+                tcol, trow = layout.pos[case]
+                tx = MARGIN + tcol * CELL_W + CELL_W // 2
+                ty = MARGIN + trow * CELL_H + CELL_H // 2
+                edges.append('<line x1="%d" y1="%d" x2="%d" y2="%d" '
+                             'stroke="#000" stroke-width="2"/>' % (
+                                 cx + BOX_W // 2, cy, tx, ty - BOX_H // 2))
+                case = items[case].get("two")
+    parts.extend(edges)
+    for node_id, (col, row) in layout.pos.items():
+        node = items[node_id]
+        kind = node.get("type")
+        shape, mark = node_shape(node)
+        cx = MARGIN + col * CELL_W + CELL_W // 2
+        cy = MARGIN + row * CELL_H + CELL_H // 2
+        raw = (mark or "") + node.get("content", "")
+        text_lines = wrap_text(raw)
+        shown = text_lines[:3]
+        texts = "".join(
+            '<text x="%d" y="%d" font-size="12" text-anchor="middle" '
+            'font-family="sans-serif">%s</text>' % (
+                cx, cy - (len(shown) - 1) * 8 + index * 16, html.escape(line))
+            for index, line in enumerate(shown))
+        if shape == "dot":
+            parts.append('<circle cx="%d" cy="%d" r="10" fill="#fff" '
+                         'stroke="#000" stroke-width="2"/>%s' % (cx, cy, texts))
+        elif shape == "diamond":
+            hw, hh = BOX_W // 2 + 8, BOX_H // 2 + 6
+            parts.append('<polygon points="%d,%d %d,%d %d,%d %d,%d" fill="#fff" '
+                         'stroke="#000" stroke-width="2"/>%s' % (
+                             cx, cy - hh, cx + hw, cy, cx, cy + hh, cx - hw, cy, texts))
+        elif shape == "round":
+            parts.append('<rect x="%d" y="%d" width="%d" height="%d" rx="20" fill="#fff" '
+                         'stroke="#000" stroke-width="2"/>%s' % (
+                             cx - BOX_W // 2, cy - BOX_H // 2, BOX_W, BOX_H, texts))
+        else:
+            parts.append('<rect x="%d" y="%d" width="%d" height="%d" fill="#fff" '
+                         'stroke="#000" stroke-width="2"/>%s' % (
+                             cx - BOX_W // 2, cy - BOX_H // 2, BOX_W, BOX_H, texts))
+    parts.append("</svg>")
+    return "\n".join(parts)
 
-def render_map(diagram, lay):
-    items = diagram.get("items", {})
-    print("ДИАГРАММА: %s" % (diagram.get("name") or "(без имени)"))
-    print("СЕТКА: %d колонок x %d строк" % (lay.cols, lay.rows))
-    print()
-    print("%-4s %-4s %-4s %-12s %s" % ("вет", "стр", "кол", "тип", "текст / цель"))
-    print("-" * 78)
 
-    rows = sorted(lay.nodes, key=lambda n: (lay.owner.get(n[0], -1), n[2], n[1]))
-    for iid, col, row, item in rows:
-        typ = item.get("type")
-        text = plain(item)
-        extra = ""
-        if typ == "branch":
-            extra = "(заголовок ветки)"
-        elif typ == "end":
-            extra = "-> КОНЕЦ"
-        print("%-4s %-4s %-4s %-12s %s" % (
-            lay.owner.get(iid, "-"), row, col, typ, (text + " " + extra).strip()[:56]))
-
-    # проверки правил DRAKON по координатам
-    print()
-    print("ПРОВЕРКИ:")
-    occupied = {}
-    clash = []
-    for iid, col, row, item in lay.nodes:
-        if (col, row) in occupied:
-            clash.append((col, row, occupied[(col, row)], iid))
-        occupied[(col, row)] = iid
-    print("  пересечений клеток: %s" % ("нет" if not clash else clash[:5]))
-
-    pos = {n[0]: (n[1], n[2]) for n in lay.nodes}
-    leftward, jumps = [], []
-    for src, dst, kind in lay.links:
-        if src not in pos:
-            continue
-        if dst not in pos:
-            continue                      # переход на чужую ветку - не клетка
-        scol, srow = pos[src]
-        dcol, drow = pos[dst]
-        if items.get(dst, {}).get("type") == "branch":
-            jumps.append((src, dst, dcol - scol))
-            continue
-        # возврат на loopend стоит в той же колонке ниже - это петля цикла, не нарушение
-        if kind == "two" and dcol < scol:
-            leftward.append((src, dst))
-    print("  two-ветвлений влево или в свою колонку: %s"
-          % ("нет" if not leftward else leftward[:5]))
-
-    heads = [n for n in lay.nodes if n[3].get("type") == "branch"]
-    print("  заголовки веток на строке 0: %s"
-          % ("да" if all(n[2] == 0 for n in heads) else "НЕТ"))
-    order = [n[3].get("branchId") for n in sorted(heads, key=lambda n: n[1])]
-    print("  порядок веток слева направо: %s" % order)
-    back = [j for j in jumps if j[2] < 0]
-    print("  межветочных переходов: %d (из них назад-влево: %d)" % (len(jumps), len(back)))
-    print("  стрелок: %d" % len(lay.links))
-
-
-# --------------------------------------------------------------- main
-
-def main():
-    if len(sys.argv) < 3 or sys.argv[1] not in ("svg", "map"):
-        print(__doc__)
-        return 2
-    cmd, path = sys.argv[1], sys.argv[2]
-    with open(path, encoding="utf-8") as fh:
-        diagram = json.load(fh)
-
-    lay = Layout(diagram).build()
-
-    if cmd == "map":
-        render_map(diagram, lay)
-        return 0
-
-    if len(sys.argv) < 4:
-        print(__doc__)
-        return 2
-    svg = Svg(lay, diagram).render()
-    with open(sys.argv[3], "w", encoding="utf-8") as fh:
-        fh.write(svg)
+def cmd_svg(src, dst):
+    try:
+        doc = load_doc(src)
+    except ValueError as exc:
+        print("ошибка: %s" % exc, file=sys.stderr)
+        return 1
+    if doc.get("type") != "drakon":
+        print("ошибка: %s: svg только для .drakon" % src, file=sys.stderr)
+        return 1
+    errors, _ = check_drakon(doc, src)
+    if errors:
+        for message in errors:
+            print("ошибка: %s" % message, file=sys.stderr)
+        return 1
+    try:
+        svg = render_svg(doc)
+    except DslError as exc:
+        print("ошибка: %s: %s" % (src, exc), file=sys.stderr)
+        return 1
+    with open(dst, "w", encoding="utf-8") as handle:
+        handle.write(svg + "\n")
+    cols, rows = grid_size(build_layout(doc))
     print("OK: %s -> %s (%dx%d клеток, %d иконок)"
-          % (path, sys.argv[3], lay.cols, lay.rows, len(lay.nodes)))
+          % (src, dst, cols, rows, len(doc["items"])))
     return 0
 
 
+def cmd_map(src):
+    try:
+        doc = load_doc(src)
+    except ValueError as exc:
+        print("ошибка: %s" % exc, file=sys.stderr)
+        return 1
+    if doc.get("type") != "drakon":
+        print("ошибка: %s: map только для .drakon" % src, file=sys.stderr)
+        return 1
+    errors, _ = check_drakon(doc, src)
+    if errors:
+        for message in errors:
+            print("ошибка: %s" % message, file=sys.stderr)
+        return 1
+    try:
+        render_map(doc)
+    except DslError as exc:
+        print("ошибка: %s: %s" % (src, exc), file=sys.stderr)
+        return 1
+    cols, rows = grid_size(build_layout(doc))
+    print("OK: %s (%dx%d клеток, %d иконок)"
+          % (src, cols, rows, len(doc["items"])), file=sys.stderr)
+    return 0
+
+
+def main(argv):
+    if len(argv) == 4 and argv[1] == "svg":
+        return cmd_svg(argv[2], argv[3])
+    if len(argv) == 3 and argv[1] == "map":
+        return cmd_map(argv[2])
+    print("использование:")
+    print("  drakon_render.py svg <вход.drakon> <выход.svg>")
+    print("  drakon_render.py map <вход.drakon>")
+    return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))
