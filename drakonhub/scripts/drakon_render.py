@@ -325,19 +325,24 @@ def mermaid_node(node_id, node):
         return '%s[/"%s"/]' % (mermaid_id(node_id), label)
     if kind in ("simpleoutput", "output"):
         return '%s[\\"%s"\\]' % (mermaid_id(node_id), label)
-    if kind == "branch" and not label:
-        return '%s["Ветка"]' % mermaid_id(node_id)
     return '%s["%s"]' % (mermaid_id(node_id), label)
 
 
+def mermaid_transparent(node):
+    """Ветка без подписи — служебная точка входа, в потоке прозрачна."""
+    return node.get("type") == "branch" and not mermaid_escape(node.get("content", ""))
+
+
 def mermaid_resolve(items, node_id):
-    """Пройти сквозь цепочки комментариев к первому узлу потока."""
+    """Пройти сквозь комментарии и безымянные ветки к узлу потока."""
     seen = set()
     while isinstance(node_id, str) and node_id in items and node_id not in seen:
         seen.add(node_id)
-        if items[node_id].get("type") != "comment":
-            return node_id
-        node_id = items[node_id].get("one")
+        node = items[node_id]
+        if node.get("type") == "comment" or mermaid_transparent(node):
+            node_id = node.get("one")
+            continue
+        return node_id
     return node_id
 
 
@@ -361,7 +366,7 @@ def render_mermaid(doc):
     declared = set()
 
     def declare(node_id, node):
-        if node_id in declared:
+        if node_id in declared or mermaid_transparent(node):
             return
         declared.add(node_id)
         lines.append("  " + mermaid_node(node_id, node))
@@ -377,7 +382,7 @@ def render_mermaid(doc):
         target = mermaid_resolve(items, target)
         if not isinstance(target, str) or target not in items:
             return
-        if target in ("header",):
+        if items[target].get("type") in ("header",):
             return
         arrow = " -- %s --> " % label if label else " --> "
         lines.append("  %s%s%s" % (mermaid_id(source), arrow, mermaid_id(target)))
@@ -385,6 +390,8 @@ def render_mermaid(doc):
     for node_id, node in items.items():
         kind = node.get("type")
         if kind in ("comment", "callout", "duration", "header"):
+            continue
+        if mermaid_transparent(node):
             continue
         if kind == "question":
             yes_id, no_id = (node.get("one"), node.get("two")) if node.get("flag1") \
@@ -399,6 +406,16 @@ def render_mermaid(doc):
                 case = items[case].get("two")
         else:
             edge(node_id, node.get("one"))
+
+    # заголовок — в точку входа (первую ветку)
+    if headers and headers[0].get("content"):
+        entry = None
+        for node_id, _ in sorted(branches, key=sort_key):
+            entry = mermaid_resolve(items, node_id)
+            if entry in declared:
+                break
+        if entry in declared:
+            lines.append("  HEADER --> %s" % mermaid_id(entry))
     return "\n".join(lines)
 
 
