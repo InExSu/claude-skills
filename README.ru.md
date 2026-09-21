@@ -85,64 +85,7 @@ flowchart LR
 
 ## 🐉 drakonhub под микроскопом
 
-Единственный скилл с исполняемым инструментарием. Он превращает обычный, человеческий текст в файл JSON, содержащий диаграмму ДРАКОН. Для просмотра можно использовать [DrakonHub](https://drakonhub.com/) Степана Митькина.
-
-**Правила языка, встроенные в скилл:** поток идёт сверху вниз без стрелок, ветвление только вправо, линии не пересекаются, «чем правее, тем хуже» — успешный путь идёт прямо вниз, отклонения уходят вправо. Ровно один `end`, одна иконка = один шаг, действия в императиве, вопросы без *и* / *или* / *не*.
-
-### Скрипты (Python 3, только стандартная библиотека — кроме последнего)
-
-```bash
-cd drakonhub
-
-# 1. Проверка диаграммы по схеме импорта DrakonHub и правилам DRAKON
-python3 scripts/drakon_tool.py check templates/choice-and-loop.drakon
-#   → OK: ошибок и замечаний нет
-
-# 2. Чтение диаграммы как псевдокода с разбивкой по ветвям силуэта
-python3 scripts/drakon_tool.py read templates/minimal.drakon
-
-# 3. Запись диаграмм в компактном DSL вместо ручной сборки JSON
-python3 scripts/drakon_dsl.py to-drakon templates/workout.dsl out.drakon
-python3 scripts/drakon_dsl.py to-dsl    out.drakon out.dsl
-python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon
-#   → OK: графы совпали (6 узлов)
-
-# 4. Расчёт раскладки по правилам силуэта и отрисовка
-python3 scripts/drakon_render.py svg templates/silhouette.drakon out.svg  # картинка для человека
-python3 scripts/drakon_render.py map templates/silhouette.drakon          # карта координат для агента
-#   → OK: templates/silhouette.drakon -> out.svg (7x6 клеток, 18 иконок)
-```
-
-### Как ловить зависания настоящим движком
-
-`check` ловит только те ловушки, которые удалось формализовать. Редактор может зависнуть и на диаграмме, которую чекер считает корректной: `layoutSilhouette` идёт вниз, натыкается на возврат и идёт снова — бесконечно.
-
-```bash
-python3 scripts/drakon_try.py render my.drakon   # OK nodes=94 | HANG | ERROR <причина>
-python3 scripts/drakon_try.py stack  my.drakon   # где именно висит, через CDP Debugger.pause
-```
-
-Это единственный скрипт, выходящий за стандартную библиотеку: ему нужны `git`, `node`, `playwright` и chromium из кэша Playwright. При первом запуске он клонирует `stepan-mitkin/drakonhub_desktop` в `drakonhub/.cache/` (каталог в `.gitignore`). Всё остальное в скилле работает и без него.
-
-### Зачем нужен DSL
-
-Писать `.drakon` вручную означает придумывать `id` для каждой иконки и вручную проставлять связи `one` / `two` — работа, в которой LLM ошибается. DSL описывает алгоритм текстом с отступами, а конвертер сам раздаёт идентификаторы, строит связи и раскладывает силуэт:
-
-```
-# Тренировка
-> Условие старта: спортзал, есть 40 минут
-@ Разминка
-  Выполнить суставную разминку
-```
-
-| Файл | Назначение |
-|---|---|
-| `SKILL.md` | Сам скилл: правила, семантика иконок, схема формата |
-| `reference/file-format.md` | Подробный разбор JSON-формата `.drakon` и крайних случаев |
-| `scripts/drakon_tool.py` | `read` (псевдокод) и `check` (валидация) |
-| `scripts/drakon_dsl.py` | Конвертация DSL ⇄ `.drakon` и проверка round-trip |
-| `scripts/drakon_render.py` | Раскладка силуэта → SVG или карта координат |
-| `templates/*.drakon`, `templates/*.dsl` | Готовые примеры: minimal, choice-and-loop, silhouette, workout |
+Единственный скилл с исполняемым инструментарием: превращает обычный текст в диаграмму ДРАКОН (`.drakon`) и структурированные ментальные карты (`.graf`). Правила, DSL, валидатор, рендер и шаблоны — в [`drakonhub/SKILL.md`](drakonhub/SKILL.md). Для просмотра — [DrakonHub](https://drakonhub.com/) Степана Митькина.
 
 ---
 
@@ -168,10 +111,10 @@ claude-skills/
 │   └── SKILL.md
 ├── drakonhub/
 │   ├── SKILL.md
-│   ├── reference/file-format.md
-│   ├── scripts/{drakon_tool,drakon_dsl,drakon_render}.py
-│   ├── templates/{minimal,choice-and-loop,silhouette}.drakon
-│                  workout.dsl
+│   ├── reference/{file-format,engine-rules,code-generator}.md
+│   ├── scripts/{drakon_format,drakon_tool,drakon_dsl,drakon_render,drakon_try}.py
+│   └── templates/{minimal,choice-and-loop,silhouette,select}.drakon
+│                  {workout.dsl,mind-map.graf}
 ├── hungarian-notation/SKILL.md
 ├── if-condition-refactor/SKILL.md
 ├── noosphere/SKILL.md
