@@ -340,6 +340,9 @@ def check_drakon(doc, label="диаграмма"):
                     remarks.append("%s: вопрос %s содержит %s: %r"
                                    % (label, node_id, name, content))
                     break
+        if node.get("type") == "select" and content.strip().endswith("?"):
+            remarks.append("%s: выбор %s — переключатель, знак вопроса не нужен: %r"
+                           % (label, node_id, content))
         if node.get("type") == "action" and content.strip().endswith((".", ":", ";")):
             remarks.append("%s: действие %s лучше без знака в конце: %r"
                            % (label, node_id, content))
@@ -752,7 +755,9 @@ def compute_ipdom(items, flow_ids, end_id):
         strict = pdom[node] - {node}
         best = None
         for cand in strict:
-            if all(other == cand or cand in pdom.get(other, set()) for other in strict):
+            # Ближайший строгий пост-доминатор: все остальные кандидаты
+            # стоят ПОСЛЕ него, то есть лежат в его множестве pdom.
+            if all(other == cand or other in pdom.get(cand, set()) for other in strict):
                 best = cand
                 break
         ipdom[node] = best
@@ -883,7 +888,14 @@ class Serializer:
                 current = conv
             elif kind == "loopbegin":
                 self.emit(indent, "~ " + escape_content(content))
-                conv = self.ipdom.get(current)
+                # Точка слияния тела цикла — его loopend, а не ipdom:
+                # ipdom(loopbegin) — первый узел тела, он всегда исполняется.
+                conv, seen = current, set()
+                while isinstance(conv, str) and conv in self.items and conv not in seen:
+                    seen.add(conv)
+                    if self.items[conv].get("type") == "loopend":
+                        break
+                    conv = self.items[conv].get("one")
                 self.ser_subtree(node.get("one"), conv, indent + 1)
                 current = conv
             else:
