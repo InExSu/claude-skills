@@ -96,6 +96,8 @@ $ Тип события                         выбор (select), текст 
 
 Экранирование: `\n` внутри строки — перевод строки в тексте иконки,
 ведущий маркер (`? Что?` как действие) — обратным слэшем `\? Что?`.
+Комментарий `>` стоит НАД иконкой, к которой привязан, — это канон,
+а не стилистика: его сверяет `verify`.
 
 ## Скрипты (Python 3, только стандартная библиотека)
 
@@ -116,6 +118,15 @@ python3 scripts/drakon_dsl.py to-drakon templates/workout.dsl out.drakon
 python3 scripts/drakon_dsl.py to-dsl    out.drakon out.dsl
 python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon
 #   → OK: графы совпали (6 узлов)
+
+# Сверка источника с каноном (fidelity): roundtrip её не заменяет
+python3 scripts/drakon_dsl.py verify templates/workout.dsl
+#   → OK: канон совпал с источником (fidelity)
+python3 scripts/drakon_dsl.py verify out.dsl out.drakon   # и готовый артефакт
+
+# Регресс-тесты самого скилла
+python3 tests/test_dsl.py
+#   → OK (9 тестов)
 
 # Раскладка и рендер
 python3 scripts/drakon_render.py svg     templates/silhouette.drakon out.svg  # картинка
@@ -138,6 +149,13 @@ python3 scripts/drakon_try.py stack  out.drakon   # стек места зави
 повторно используемые узлы и цепочки комментариев нормализуются.
 Подробности — в [reference/file-format.md](reference/file-format.md).
 
+`verify` — вторая половина ворот: байты DSL-источника против `to-dsl` его же
+диаграммы (или готового `.drakon`). `roundtrip` остаётся зелёным даже когда
+построитель увёл иконку в чужую ветку: канон тогда «плохой, но стабильный».
+Ловится это только `verify`. Поэтому источник обязан быть каноническим:
+комментарий — над своей иконкой, продолжение после выбора и параллельного
+блока — на своём уровне вложенности.
+
 ## Состав скилла
 
 | Файл | Назначение |
@@ -148,7 +166,7 @@ python3 scripts/drakon_try.py stack  out.drakon   # стек места зави
 | [reference/code-generator.md](reference/code-generator.md) | ограничения генератора псевдокода (`drakongen.js`) |
 | [reference/sequence-and-state.md](reference/sequence-and-state.md) | вспомогательные форматы `.seq` и `.sm` |
 | `scripts/drakon_tool.py` | `check` (валидация) и `read` (псевдокод) |
-| `scripts/drakon_dsl.py` | `to-drakon`, `to-dsl`, `roundtrip` |
+| `scripts/drakon_dsl.py` | `to-drakon`, `to-dsl`, `roundtrip`, `verify` (fidelity) |
 | `scripts/drakon_render.py` | `svg` (картинка), `mermaid` (.mmd) и `map` (карта координат) |
 | `scripts/drakon_try.py` | прогон реальным движком: `OK` / `HANG` / `ERROR` |
 | `scripts/drakon_format.py` | общее ядро (парсинг, проверка, DSL-модель) |
@@ -158,6 +176,8 @@ python3 scripts/drakon_try.py stack  out.drakon   # стек места зави
 | `templates/select.drakon` | выбор из вариантов |
 | `templates/parallel-and-timer.drakon` | параллельные процессы и таймеры |
 | `templates/workout.dsl` | пример DSL |
+| `tests/test_dsl.py` | регресс-тесты DSL-слоя: `python3 tests/test_dsl.py` |
+| `tests/fixtures/*.dsl` | канонический корпус: комментарии в ветках, выбор, параллель |
 | `templates/mind-map.graf` | пример ментальной карты |
 | `templates/oauth2-flow.seq` | пример диаграммы последовательности |
 | `templates/order-state.sm` | пример машины состояний |
@@ -231,6 +251,7 @@ python3 scripts/drakon_render.py mermaid templates/order-state.sm out.mmd
 
 - [ ] `check` — `OK: ошибок и замечаний нет`
 - [ ] `roundtrip` — `OK: графы совпали`
+- [ ] `verify` — `OK: канон совпал с источником (fidelity)`
 - [ ] `drakon_try.py render` — `OK` (нет `HANG` / `ERROR`)
 - [ ] `read` звучит как исходный текст (шаги, вопросы, ветки на месте)
 - [ ] счастливый путь идёт вниз, сбои — вправо
@@ -242,5 +263,6 @@ python3 scripts/drakon_render.py mermaid templates/order-state.sm out.mmd
 ## Главный принцип
 
 > **Схема доказывает свою правильность через структуру:**
-> прошла `check` → сошлась в `roundtrip` → открылась в реальном движке
-> (`drakon_try.py`) → читается как текст → диаграмма верна.
+> прошла `check` → канон сошёлся в `roundtrip` → источник совпал с каноном
+> (`verify`) → открылась в реальном движке (`drakon_try.py`) → читается как
+> текст → диаграмма верна.

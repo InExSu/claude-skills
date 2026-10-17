@@ -129,6 +129,24 @@ def flow_successors(items, node_id):
     return out
 
 
+def flow_target(items, node_id):
+    """Первый настоящий узел потока: комментарии прозрачны (comment.one).
+
+    flow_successors отдаёт ребро НА комментарий как есть; анализ доминирования
+    обязан пройти дальше по его one. Иначе иконка, перед которой стоит
+    комментарий (частый случай — первый ребёнок ветки да:/нет:), вылетает из
+    графа: преемник-комментарий не попадает в universe и отбрасывается.
+    """
+    seen = set()
+    while isinstance(node_id, str) and node_id in items and node_id not in seen:
+        if items[node_id].get("type") != "comment":
+            return node_id
+        seen.add(node_id)
+        nxt = items[node_id].get("one")
+        node_id = nxt if isinstance(nxt, str) else None
+    return None
+
+
 # --------------------------------------------------------------------------
 # check: структурная проверка диаграммы
 # --------------------------------------------------------------------------
@@ -730,7 +748,17 @@ def compute_ipdom(items, flow_ids, end_id):
     pdom = {n: set(universe) for n in nodes}
     if end_id in items:
         pdom[end_id] = {end_id}
-    succs = {n: [s for s in flow_successors(items, n) if s in universe] for n in nodes}
+    # Рёбра на комментарий проскакиваем до настоящей иконки: иначе такой
+    # преемник (комментария нет в universe) отбрасывается, и пост-доминатор
+    # схлопывается на соседнюю иконку — канон уводит её из ветки.
+    succs = {}
+    for n in nodes:
+        targets = []
+        for succ in flow_successors(items, n):
+            real = flow_target(items, succ)
+            if real is not None and real in universe and real not in targets:
+                targets.append(real)
+        succs[n] = targets
     if end_id in items:
         succs[end_id] = []
     for _ in range(len(nodes) + 2):
@@ -851,8 +879,9 @@ class Serializer:
                 for entry in branches:
                     self.emit(indent + 1, "ветка:")
                     self.ser_subtree(entry, conv, indent + 2)
-                if isinstance(conv, str) and conv in self.items:
-                    self.emitted.add(conv)
+                # parend не помечаем заранее: цикл сам пройдёт его насквозь
+                # (parend -> one), иначе условие «current not in emitted»
+                # обрывает обход и хвост после блока теряется.
                 current = conv
             elif kind == "parend":
                 current = node.get("one")
@@ -875,6 +904,11 @@ class Serializer:
             elif kind == "select":
                 self.emit(indent, "$ " + escape_content(content))
                 conv = self.ipdom.get(current)
+                # case — не точка слияния: ipdom выбора всегда первый case
+                # (через него проходят все пути), пропускаем case-узлы вниз.
+                while isinstance(conv, str) and conv in self.items \
+                        and self.items[conv].get("type") == "case":
+                    conv = self.ipdom.get(conv)
                 case_id = node.get("one")
                 while isinstance(case_id, str) and case_id in self.items \
                         and self.items[case_id].get("type") == "case" \

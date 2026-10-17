@@ -5,13 +5,20 @@
   python3 scripts/drakon_dsl.py to-drakon workout.dsl out.drakon
   python3 scripts/drakon_dsl.py to-dsl    out.drakon out.dsl
   python3 scripts/drakon_dsl.py roundtrip minimal.drakon
+  python3 scripts/drakon_dsl.py verify    workout.dsl [out.drakon]
 
 roundtrip проверяет каноническую форму: .drakon -> DSL -> .drakon -> DSL,
 оба DSL-текста должны совпасть.
 
+verify сверяет БАЙТЫ DSL-источника с to-dsl его диаграммы (или готового
+файла *.drakon): ловит случай, когда построитель увёл иконку, а канон при
+этом устойчив и roundtrip молчит. Комментарий перед иконкой — законная
+часть DSL, поэтому источник обязан быть каноническим.
+
 Только стандартная библиотека.
 """
 
+import difflib
 import os
 import sys
 
@@ -108,6 +115,41 @@ def cmd_roundtrip(src):
     return 0
 
 
+def cmd_verify(src, ref=None):
+    """Сверить DSL-источник с каноном: fidelity, а не устойчивость канона.
+
+    Без ref диаграмма строится из источника, и её to-dsl обязан совпасть с
+    источником побайтово. С ref сверяется канон готового *.drakon — так
+    проверяют, что выложенный артефакт не протух.
+
+    roundtrip этого не заменяет: он видит лишь согласие канона с самим
+    собой. Если построитель положил иконку не туда, канон остаётся
+    устойчивым, и roundtrip зелёный.
+    """
+    try:
+        source = read_text(src)
+        if ref:
+            doc = load_doc(ref)
+        else:
+            doc = build_diagram(parse_dsl(source))
+        canon = diagram_to_dsl(doc)
+    except (DslError, ValueError) as exc:
+        print("ошибка: %s: %s" % (src, exc))
+        return 1
+    old = source.rstrip("\n").split("\n")
+    new = canon.rstrip("\n").split("\n")
+    if old == new:
+        print("OK: %s: канон совпал с источником (fidelity)" % (ref or src))
+        return 0
+    print("ошибка: %s: канон разошёлся с источником" % src)
+    for line in list(difflib.unified_diff(old, new, fromfile=src,
+                                          tofile=ref or "канон", lineterm=""))[:26]:
+        print(line)
+    if len(old) != len(new):
+        print("  строк: источник %d, канон %d" % (len(old), len(new)))
+    return 1
+
+
 def main(argv):
     if len(argv) == 4 and argv[1] == "to-drakon":
         return cmd_to_drakon(argv[2], argv[3])
@@ -115,10 +157,15 @@ def main(argv):
         return cmd_to_dsl(argv[2], argv[3])
     if len(argv) == 3 and argv[1] == "roundtrip":
         return cmd_roundtrip(argv[2])
+    if len(argv) == 3 and argv[1] == "verify":
+        return cmd_verify(argv[2])
+    if len(argv) == 4 and argv[1] == "verify":
+        return cmd_verify(argv[2], argv[3])
     print("использование:")
     print("  drakon_dsl.py to-drakon <вход.dsl> <выход.drakon>")
     print("  drakon_dsl.py to-dsl    <вход.drakon> <выход.dsl>")
     print("  drakon_dsl.py roundtrip <файл.drakon>")
+    print("  drakon_dsl.py verify    <источник.dsl> [<проверяемый.drakon>]")
     return 2
 
 
