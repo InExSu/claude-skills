@@ -535,11 +535,60 @@ def parse_dsl(text):
     return roots
 
 
+# --------------------------------------------------------------------------
+# Раскладка выносок (*): метрики движка DrakonHub
+# --------------------------------------------------------------------------
+# Проверено по drakon_canvas.js: текст выноски — 14px Arial, padding 10,
+# line-height 1.3 (≈18.19px); перенос не шире 400 (config.maxWidth), в
+# canvas-режиме — по width - 2*10. Оценка консервативная: символ шире
+# настоящего, строка выше настоящей, поэтому плашка не меньше текста и ряд
+# не наезжает сам на себя.
+CALLOUT_CHAR = 8.5           # ширина символа 14px Arial с запасом вверх
+CALLOUT_PAD = 10             # padding плашки (движок)
+CALLOUT_LINE_HEIGHT = 19     # 14px * 1.3 = 18.19, округляем вверх
+CALLOUT_WIDTH_MIN = 140
+CALLOUT_WIDTH_MAX = 400      # предел переноса текста движком
+CALLOUT_ROW_LEFT = -200      # левый край первой колонки диаграммы
+CALLOUT_ROW_BOTTOM = -100    # нижняя кромка ряда: выше заголовка в 2-3 строки
+CALLOUT_TAIL = 40            # хвост-указатель вниз; конец ряда ≈ на -60
+CALLOUT_GAP = 16
+
+
+def _wrap_lines(text, per_line):
+    """Число строк при переносе по словам: движок режет слова так же."""
+    lines, used = 0, 0
+    for word in text.split() or [""]:
+        while len(word) > per_line:
+            word = word[per_line:]
+            lines += 1
+            used = 0
+        if used == 0:
+            used = len(word)
+            lines += 1
+        elif used + 1 + len(word) <= per_line:
+            used += 1 + len(word)
+        else:
+            lines += 1
+            used = len(word)
+    return max(lines, 1)
+
+
+def callout_box(text):
+    """Ширина и высота плашки выноски под текст (оценка по движку)."""
+    one_line = len(text) * CALLOUT_CHAR + 2 * CALLOUT_PAD
+    width = min(CALLOUT_WIDTH_MAX,
+                max(CALLOUT_WIDTH_MIN, ((one_line + 7) // 8) * 8))
+    per_line = max(int((width - 2 * CALLOUT_PAD) / CALLOUT_CHAR), 1)
+    height = 2 * CALLOUT_PAD + _wrap_lines(text, per_line) * CALLOUT_LINE_HEIGHT
+    return width, max(height, 40)
+
+
 class Builder:
     def __init__(self):
         self.items = {}
         self.counter = 0
         self.loop_stack = []
+        self.callout_x = CALLOUT_ROW_LEFT
 
     def new_id(self):
         self.counter += 1
@@ -551,6 +600,23 @@ class Builder:
         node.update(fields)
         self.items[node_id] = node
         return node_id
+
+    def add_callout(self, text):
+        """Добавить выноску: плашки раскладываются рядом НАД диаграммой.
+
+        Движок не связывает выноску с иконкой (noConnect['callout']), поэтому
+        «привязанность» даёт раскладка: ряд над заголовком (хвосты смотрят
+        вниз, на схему), плашки не наезжают друг на друга. Раньше все выноски
+        получали одни и те же координаты и ложились друг на друга. Размер
+        плашки — оценка под перенос текста движком (см. callout_box).
+        """
+        width, height = callout_box(text)
+        left = self.callout_x
+        self.callout_x = left + width + CALLOUT_GAP
+        return self.add("callout", content=text, left=left,
+                        top=CALLOUT_ROW_BOTTOM - height, width=width,
+                        height=height, px=width // 2,
+                        py=height + CALLOUT_TAIL, zIndex=1)
 
 
 def build_diagram(roots):
@@ -571,8 +637,7 @@ def build_diagram(roots):
 
     for node in top:
         if node.kind == "callout":
-            builder.add("callout", content=node.text,
-                        left=600, top=40, width=160, height=40, px=-60, py=20, zIndex=1)
+            builder.add_callout(node.text)
 
     branches = [n for n in top if n.kind == "branch"]
     if branches:
@@ -645,8 +710,7 @@ def build_construct(builder, line, cont):
     if kind == "comment":
         return builder.add("comment", content=text, one=cont)
     if kind == "callout":
-        builder.add("callout", content=text,
-                    left=600, top=40, width=160, height=40, px=-60, py=20, zIndex=1)
+        builder.add_callout(text)
         return cont
     if kind == "action":
         side = None
@@ -1012,7 +1076,12 @@ def diagram_to_dsl(doc):
         if single_implicit:
             ser.emit_comments(node_id, 1)
         ser.ser_seq(branch.get("one"), None, base)
-    for node_id in sorted(ser.items):
+    # Номера узлов — строки; с 8+ выносками лексикографический порядок
+    # («10» < «3») выносил последнюю выноску вперёд и ломал канон.
+    def node_order(node_id):
+        return (0, int(node_id), "") if node_id.isdigit() else (1, 0, node_id)
+
+    for node_id in sorted(ser.items, key=node_order):
         node = ser.items[node_id]
         if node.get("type") == "callout" and node_id not in ser.emitted:
             ser.emitted.add(node_id)

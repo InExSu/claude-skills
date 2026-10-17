@@ -9,6 +9,8 @@
 * фикстуры tests/fixtures/*.dsl каноничны: build -> check без ошибок, а
   diagram_to_dsl возвращает ровно тот же текст (fidelity, не только roundtrip);
 * канон устойчив: DSL -> .drakon -> DSL -> .drakon -> DSL совпадает;
+* выноска `*` — плашка в ряду над диаграммой: без наложений, размер
+  посчитан под перенос текста движком (14px Arial, maxWidth 400);
 * регрессии: комментарий перед первой иконкой ветки не уводит соседа из
   ветки; выбор не втягивает продолжение в первый case; параллельный блок не
   теряет хвост после parend; verify отклоняет неканонический источник.
@@ -26,7 +28,12 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 from drakon_dsl import cmd_verify  # noqa: E402
 from drakon_format import (  # noqa: E402
+    CALLOUT_ROW_BOTTOM,
+    CALLOUT_ROW_LEFT,
+    CALLOUT_TAIL,
+    CALLOUT_WIDTH_MAX,
     build_diagram,
+    callout_box,
     check_drakon,
     diagram_to_dsl,
     load_doc,
@@ -126,6 +133,75 @@ class TailKeptTest(unittest.TestCase):
         self.assertIn("Собрать итог", canon)
         self.assertTrue(canon.rstrip().endswith("!pause Пауза перед завершением"),
                         canon)
+
+
+class CalloutPlacementTest(unittest.TestCase):
+    """Выноски: ряд над диаграммой, без наложений, плашка по размеру текста."""
+
+    SOURCE = (
+        "# Проба\n"
+        "* Короткая выноска\n"
+        "Собрать данные\n"
+        "* Длинная выноска про раскладку в редакторе: текст переносится "
+        "по словам и занимает несколько строк подряд\n"
+        "Отправить отчёт\n"
+    )
+
+    @staticmethod
+    def callouts(doc):
+        return [n for n in doc["items"].values() if n.get("type") == "callout"]
+
+    def test_callouts_do_not_overlap_and_sit_above(self):
+        """Раньше все выноски получали одну точку и ложились друг на друга."""
+        callouts = self.callouts(build_diagram(parse_dsl(self.SOURCE)))
+        self.assertEqual(2, len(callouts), "потеряли выноски")
+        boxes = [(c["left"], c["top"], c["left"] + c["width"], c["top"] + c["py"])
+                 for c in callouts]
+        (left1, top1, right1, bottom1), (left2, top2, right2, bottom2) = boxes
+        no_x = right1 <= left2 or right2 <= left1
+        no_y = bottom1 <= top2 or bottom2 <= top1
+        self.assertTrue(no_x or no_y, "выноски наложились: %s и %s" % (boxes[0], boxes[1]))
+        for callout in callouts:
+            self.assertLessEqual(callout["top"] + callout["py"], -40,
+                                 "хвост выноски заходит на поток")
+            self.assertEqual(CALLOUT_ROW_BOTTOM + CALLOUT_TAIL,
+                             callout["top"] + callout["py"],
+                             "конец хвоста не на общей линии ряда")
+            self.assertEqual(callout["width"] // 2, callout["px"],
+                             "хвост не по центру плашки")
+
+    def test_plate_grows_with_text_and_fits_engine_measure(self):
+        """Плашка не меньше замера движка, иначе текст вылезает из неё."""
+        short, long = self.callouts(build_diagram(parse_dsl(self.SOURCE)))
+        self.assertLess(short["height"], long["height"])
+        self.assertLessEqual(long["width"], CALLOUT_WIDTH_MAX)
+        for text, measured in (
+            ("Заметка средней длины: проверка переноса по словам и оценки строк",
+             56.375),
+            ("Очень длинная заметка про поведение выносок в редакторе. " * 8,
+             201.875),
+        ):
+            with self.subTest(text=text[:30]):
+                _, height = callout_box(text)
+                self.assertGreaterEqual(height, measured)
+
+    def test_callout_inside_block_shares_row(self):
+        """Выноска внутри ветки попадает в тот же ряд (не в иконки)."""
+        doc = build_diagram(parse_dsl(
+            "# Проба\n? Устал?\n  да:\n    * Отдохнуть подольше\n    Стоп\n"
+            "  нет:\n    Продолжить\n"))
+        callouts = self.callouts(doc)
+        self.assertEqual(1, len(callouts))
+        self.assertEqual(CALLOUT_ROW_LEFT, callouts[0]["left"])
+
+    def test_many_callouts_keep_canon_order(self):
+        """С 8+ выносками id ≥ 10: лексикографическая сортировка рвала канон."""
+        source = ("# Проба\n"
+                  + "".join("* Заметка номер %d\n" % i for i in range(1, 9))
+                  + "Собрать данные\nОтправить отчёт\n")
+        canon = diagram_to_dsl(build_diagram(parse_dsl(source)))
+        order = [line for line in canon.split("\n") if line.startswith("*")]
+        self.assertEqual(["* Заметка номер %d" % i for i in range(1, 9)], order)
 
 
 class VerifyCommandTest(unittest.TestCase):
