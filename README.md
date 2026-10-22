@@ -66,6 +66,7 @@ flowchart LR
 |---|---|
 | **[hungarian-notation](hungarian-notation/SKILL.md)** | Type prefixes for variables, functions, object keys, class properties and constants in any language. Explicit opt-in only. *(activate with `@hungarian`)* |
 | **[constant-naming-convention](constant-naming-convention/SKILL.md)** | Constants named descriptively **including the value they hold**, so the code documents itself. |
+| **[explicit-boolean-returns](explicit-boolean-returns/SKILL.md)** | Return-code meaning is stated in words: a predicate is named as a yes/no question (0 = yes), a status is glossed in words at the call site, and one `return 0` read with opposite meanings by two callers is a defect, not flexibility. |
 | **[token-economy](token-economy/SKILL.md)** | Every token must earn its place: no politeness padding, no redundant restatement, in prompts, instructions, docs and code. |
 
 ### 🔗 Pipelines
