@@ -6,7 +6,7 @@ description: >
   function runners with error handling, decorator-wrapped steps, or asks to implement
   "rwd", "chain of decorators", "pipeline with profiling", or "NS_Container pattern".
   Language-agnostic: works in JS, PHP, Python, Go. Uses Hungarian notation
-  (s_Error, a_Log, f_RWD_Start_Time). Do NOT apply without explicit activation
+  (o_Error, a_Log, f_RWD_Start_Time). Do NOT apply without explicit activation
   or clear pipeline/chain context.
 ---
 
@@ -15,7 +15,7 @@ description: >
 ## Core idea
 
 Линейный конвейер: каждый шаг — декорируемая функция, мутирующая ОДИН общий
-контейнер (`NS_Container` / `ns`). Если шаг выставил `s_Error` — цепочка
+контейнер (`NS_Container` / `ns`). Если шаг выставил ошибку (`o_Error`) — цепочка
 останавливается. Язык не важен — меняются только синтаксис и API времени/памяти.
 
 ---
@@ -26,10 +26,10 @@ description: >
 
 ```php
 $ns = [
-    's_Error'          => '',      // '' = ОК, не пусто = стоп
-    'f_RWD_Start_Time' => 0.0,
-    'a_Log'            => [],
-    'a_Profile'        => [],
+    'o_Error'           => null,   // null = ОК, массив = ошибка (см. 6.1)
+    'f_RWD_Start_Time'  => 0.0,
+    'a_Log'             => [],
+    'a_Profile'         => [],
     // + доменные поля проекта
 ];
 ```
@@ -42,7 +42,7 @@ JS/Python: те же поля в классе `NS_Container` / dict.
 
 ```php
 function v_RWD(callable $c_Fn, array &$ns): void {
-    if ($ns['s_Error'] !== '') return;
+    if (b_Has_Error($ns)) return;
 
     v_RWD_Start($c_Fn, $ns);
     $c_Fn($ns);
@@ -107,13 +107,49 @@ function v_main_RWD_Chain(array &$ns): void {
 
 ## 6. Обработка ошибок
 
-Шаги НЕ бросают исключения. При ошибке выставляют `s_Error` и возвращаются:
+Шаги НЕ бросают исключения. Ошибка — структурированный объект `o_Error`
+(код, сообщение, шаг, время, стек), а не голая строка. Ключи `o_Error`
+пишутся ТОЛЬКО внутри `v_Error_Set()` — это убирает риск опечаток вида
+`s_Error` vs `s_error` и сохраняет контекст.
+
+### 6.1. Структура ошибки и доступ
+
+```php
+/** Есть ли ошибка (предикат). */
+function b_Has_Error(array $ns): bool {
+    return $ns['o_Error'] !== null;
+}
+
+/** Выставить ошибку: код + сообщение; шаг и стек берутся автоматически. */
+function v_Error_Set(array &$ns, string $s_Code, string $s_Message): void {
+    $a_Trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 4);
+    $ns['o_Error'] = [
+        's_Code'    => $s_Code,
+        's_Message' => $s_Message,
+        's_Step'    => $a_Trace[1]['function'] ?? '',
+        'f_Time'    => microtime(true),
+        'a_Stack'   => $a_Trace,
+    ];
+}
+
+/** Человекочитаемое представление ошибки для логов. */
+function s_Error_Get(array $ns): string {
+    $o_E = $ns['o_Error'];
+    return sprintf('[%s] %s: %s', $o_E['s_Step'], $o_E['s_Code'], $o_E['s_Message']);
+}
+```
+
+Предикат `b_Has_Error()` используется в раннере; `s_Error_Get()` — в декораторах
+и профиле. В JS/Python/Go роль `debug_backtrace` играют `Error().stack` / `traceback` /
+`runtime.Callers`.
+
+### 6.2. Пример шага
 
 ```php
 function v_sheet_Load_RWD(array &$ns): void {
     $a_Data = loadSheet();
     if ($a_Data === []) {
-        $ns['s_Error'] = 'v_sheet_Load_RWD: empty data';
+        v_Error_Set($ns, 'EMPTY_DATA', 'v_sheet_Load_RWD: empty data');
         return;
     }
     $ns['a_Data'] = $a_Data;
@@ -130,7 +166,7 @@ function v_sheet_Load_RWD(array &$ns): void {
 function v_price_Build_RWD(array &$ns): void {
     $o_Result = a_price_Commands_Build($ns['a_Items']);
     if (!$o_Result['ok']) {
-        $ns['s_Error'] = $o_Result['error'];
+        v_Error_Set($ns, 'BUILD_FAILED', $o_Result['error']);
         return;
     }
     $ns['a_Commands'] = $o_Result['value'];
@@ -162,7 +198,8 @@ function a_price_Command_Build(array $a_Item): array {
 ## 8. Профилирование (v_profile_RWD)
 
 Финальный шаг всегда последний: выводит таблицу `a_Profile` (статус OK/ERR,
-длительность, пик памяти, итог, финальный статус цепочки).
+длительность, пик памяти, итог, финальный статус цепочки; при ошибке — код и
+сообщение через `s_Error_Get()`).
 
 ---
 
@@ -173,8 +210,9 @@ function a_price_Command_Build(array $a_Item): array {
 - Шаги вызываются только через `v_RWD()`
 - Шаги передаются как **значения функций**, а не строки: в PHP 8.1+ — first-class callable `v_RWD(v_step_One_RWD(...), $ns)`; в JS/Python/Go — прямая ссылка
 - Имена шагов: `v_` + `_RWD`
-- Поля контейнера с венгерской нотацией: `s_Error`, `a_Log`, `f_RWD_Start_Time`
-- Ошибка останавливает цепочку через `s_Error`, а не исключения
+- Поля контейнера с венгерской нотацией: `o_Error`, `a_Log`, `f_RWD_Start_Time`
+- Ошибка останавливает цепочку через `o_Error`, а не исключения
+- Ошибку выставлять только через `v_Error_Set()`; читать только через `b_Has_Error()` / `s_Error_Get()`
 - `v_profile_RWD` всегда последний
 
 **НЕЛЬЗЯ:**
@@ -182,7 +220,8 @@ function a_price_Command_Build(array $a_Item): array {
 - Вызывать `v_RWD_Start` / `v_RWD_Finish` вручную
 - Пропускать `v_RWD()` для любого шага
 - Возвращать данные из шагов — используйте `ns`
-- Использовать `null` — вместо этого пустые значения: `''`, `0`, `[]`, `0.0`
+- Писать/читать ключи `o_Error` вручную мимо `v_Error_Set()` / `b_Has_Error()`
+- Использовать `null` в доменных данных — вместо этого пустые значения: `''`, `0`, `[]`, `0.0` (исключение: `o_Error` = null означает «ошибки нет»)
 
 ---
 
