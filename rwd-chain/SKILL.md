@@ -70,13 +70,25 @@ API времени/памяти зависит от языка:
 
 ```php
 function v_main_RWD_Chain(array &$ns): void {
-    v_RWD('v_step_One_RWD', $ns);
-    v_RWD('v_step_Two_RWD', $ns);
-    v_RWD('v_step_Three_RWD', $ns);
-    // v_RWD('v_optional_RWD', $ns); // закомментировано = отключено
-    v_RWD('v_profile_RWD', $ns);
+    v_RWD(v_step_One_RWD(...), $ns);
+    v_RWD(v_step_Two_RWD(...), $ns);
+    v_RWD(v_step_Three_RWD(...), $ns);
+    // v_RWD(v_optional_RWD(...), $ns); // закомментировано = отключено
+    v_RWD(v_profile_RWD(...), $ns);
 }
 ```
+
+### 4.1. Как передавать шаг (язык-специфично)
+
+Шаг передаётся как **значение функции**, а не строка с именем: строка не даёт
+статической проверки — опечатка всплывёт только в рантайме, IDE и рефакторинг
+не видят имя.
+
+| Язык | Способ | Пример |
+|---|---|---|
+| PHP 8.1+ | first-class callable `(...)` | `v_RWD(v_step_One_RWD(...), $ns)` |
+| JS / Python | ссылка на функцию | `rwd(stepOne, ns)` |
+| Go | значение функции | `rwd(stepOne, ns)` |
 
 ---
 
@@ -159,6 +171,7 @@ function a_price_Command_Build(array $a_Item): array {
 **НАДО:**
 - Шаги принимают и мутируют `ns` — не возвращают значений
 - Шаги вызываются только через `v_RWD()`
+- Шаги передаются как **значения функций**, а не строки: в PHP 8.1+ — first-class callable `v_RWD(v_step_One_RWD(...), $ns)`; в JS/Python/Go — прямая ссылка
 - Имена шагов: `v_` + `_RWD`
 - Поля контейнера с венгерской нотацией: `s_Error`, `a_Log`, `f_RWD_Start_Time`
 - Ошибка останавливает цепочку через `s_Error`, а не исключения
