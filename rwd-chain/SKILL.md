@@ -5,50 +5,48 @@ description: >
   Apply this skill when the user writes pipeline/chain execution code, sequential
   function runners with error handling, decorator-wrapped steps, or asks to implement
   "rwd", "chain of decorators", "pipeline with profiling", or "NS_Container pattern".
-  JavaScript implementation only. Uses Hungarian notation (s_Error, a_Log, f_RWD_Start_Time).
-  Do NOT apply without explicit activation or clear pipeline/chain context.
+  Language-agnostic: works in JS, PHP, Python, Go. Uses Hungarian notation
+  (s_Error, a_Log, f_RWD_Start_Time). Do NOT apply without explicit activation
+  or clear pipeline/chain context.
 ---
 
-# RWD Chain Pattern (JavaScript)
+# RWD Chain Pattern (universal)
 
-## Core Idea
+## Core idea
 
-Линейный конвейер, где каждый шаг — декорируемая функция. Шаги разделяют один мутабельный контейнер `NS_Container`. Если любой шаг устанавливает `s_Error` — цепочка останавливается.
-
-```
-v_RWD(v_step_One_RWD, ns)
-v_RWD(v_step_Two_RWD, ns)   // пропускается, если step_One установил ns.s_Error
-v_RWD(v_step_Three_RWD, ns) // пропускается
-```
+Линейный конвейер: каждый шаг — декорируемая функция, мутирующая ОДИН общий
+контейнер (`NS_Container` / `ns`). Если шаг выставил `s_Error` — цепочка
+останавливается. Язык не важен — меняются только синтаксис и API времени/памяти.
 
 ---
 
 ## 1. NS_Container
 
-```javascript
-class NS_Container {
-  constructor() {
-    this.s_Error = '';              // пусто = ОК, не пусто = стоп
-    this.f_RWD_Start_Time = 0.0;
-    this.a_Log = [];
-    this.a_Profile = [];
+Один мутабельный объект, создаётся один раз:
+
+```php
+$ns = [
+    's_Error'          => '',      // '' = ОК, не пусто = стоп
+    'f_RWD_Start_Time' => 0.0,
+    'a_Log'            => [],
+    'a_Profile'        => [],
     // + доменные поля проекта
-  }
-}
+];
 ```
+
+JS/Python: те же поля в классе `NS_Container` / dict.
 
 ---
 
 ## 2. v_RWD() — декоратор-исполнитель
 
-```javascript
-function v_RWD(c_Fn, ns) {
-  if (ns.s_Error !== '') return;
+```php
+function v_RWD(callable $c_Fn, array &$ns): void {
+    if ($ns['s_Error'] !== '') return;
 
-  const s_Name = s_callable_Name_Get(c_Fn);
-  v_RWD_Start(s_Name, ns);
-  c_Fn(ns);
-  v_RWD_Finish(s_Name, ns);
+    v_RWD_Start($c_Fn, $ns);
+    $c_Fn($ns);
+    v_RWD_Finish($c_Fn, $ns);
 }
 ```
 
@@ -56,51 +54,27 @@ function v_RWD(c_Fn, ns) {
 
 ## 3. Декораторы
 
-```javascript
-function v_RWD_Start(s_Name, ns) {
-  ns.f_RWD_Start_Time = performance.now();
-  const s_Msg = `[${new Date().toTimeString().slice(0, 8)}] START: ${s_Name}`;
-  console.log(s_Msg);
-  ns.a_Log.push(s_Msg);
-}
+Start/Finish пишут в лог и профиль: время старта, длительность, пик памяти, ошибка.
+API времени/памяти зависит от языка:
 
-function v_RWD_Finish(s_Name, ns) {
-  const f_Duration = (performance.now() - ns.f_RWD_Start_Time) / 1000;
-  const i_Memory = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
-  const i_Memory_Peak = Math.round(process.memoryUsage().heapTotal / 1024 / 1024);
-
-  let s_Msg = `[${new Date().toTimeString().slice(0, 8)}] FINISH: ${s_Name} (${f_Duration.toFixed(4)} sec | mem: ${i_Memory} MB | peak: ${i_Memory_Peak} MB)`;
-
-  if (ns.s_Error !== '') {
-    s_Msg += `\n  ⚠️ ERROR: ${ns.s_Error}`;
-    ns.a_Log.push(`  ERROR: ${ns.s_Error}`);
-  }
-
-  console.log(s_Msg);
-  ns.a_Log.push(s_Msg);
-
-  ns.a_Profile.push({
-    s_function: s_Name,
-    f_duration: f_Duration,
-    i_memory: i_Memory,
-    i_memory_peak: i_Memory_Peak,
-    s_error: ns.s_Error,
-    f_timestamp: Date.now() / 1000
-  });
-}
-```
+| Язык | Время | Память |
+|---|---|---|
+| JS | `performance.now()` | `process.memoryUsage()` |
+| PHP | `microtime(true)` | `memory_get_peak_usage()` |
+| Python | `time.perf_counter()` | `tracemalloc` |
+| Go | `time.Now()` | `runtime.ReadMemStats` |
 
 ---
 
 ## 4. Сборка цепочки
 
-```javascript
-function v_main_RWD_Chain(ns) {
-  v_RWD(v_step_One_RWD, ns);
-  v_RWD(v_step_Two_RWD, ns);
-  v_RWD(v_step_Three_RWD, ns);
-  // v_RWD(v_optional_RWD, ns); // закомментировано = отключено
-  v_RWD(v_profile_RWD, ns);
+```php
+function v_main_RWD_Chain(array &$ns): void {
+    v_RWD('v_step_One_RWD', $ns);
+    v_RWD('v_step_Two_RWD', $ns);
+    v_RWD('v_step_Three_RWD', $ns);
+    // v_RWD('v_optional_RWD', $ns); // закомментировано = отключено
+    v_RWD('v_profile_RWD', $ns);
 }
 ```
 
@@ -108,7 +82,7 @@ function v_main_RWD_Chain(ns) {
 
 ## 5. Именование шагов
 
-`v_` + `domain` + `_Action` + `_RWD`
+`v_` + домен + `_Action` + `_RWD`:
 
 | Что делает | Имя функции |
 |---|---|
@@ -119,146 +93,75 @@ function v_main_RWD_Chain(ns) {
 
 ---
 
-## 6. v_profile_RWD — встроенный финальный шаг
+## 6. Обработка ошибок
 
-```javascript
-function v_profile_RWD(ns) {
-  console.log('='.repeat(70));
-  console.log('EXECUTION PROFILE');
-  console.log('='.repeat(70));
+Шаги НЕ бросают исключения. При ошибке выставляют `s_Error` и возвращаются:
 
-  let f_Total = 0;
-  let i_Peak = 0;
-
-  for (const o of ns.a_Profile) {
-    const s_Status = o.s_error !== '' ? 'ERR' : 'OK';
-    console.log(`${s_Status}  ${o.s_function.padEnd(30)} | ${o.f_duration.toFixed(4)} sec | ${o.i_memory} MB`);
-    f_Total += o.f_duration;
-    i_Peak = Math.max(i_Peak, o.i_memory_peak);
-  }
-
-  console.log('-'.repeat(70));
-  console.log(`TOTAL: ${f_Total.toFixed(4)} sec`);
-  console.log(`PEAK MEMORY: ${i_Peak} MB`);
-  console.log('='.repeat(70));
-  console.log(ns.s_Error !== '' ? `\n❌ FAILED: ${ns.s_Error}` : '\n✅ SUCCESS');
-}
-```
-
----
-
-## 7. Обработка ошибок
-
-```javascript
-// ✅ Правильно
-function v_sheet_Load_RWD(ns) {
-  const a_Data = loadSheet();
-  if (a_Data.length === 0) {
-    ns.s_Error = 'v_sheet_Load_RWD: empty data';
-    return;
-  }
-  ns.a_Data = a_Data;
-}
-
-// ❌ Неправильно — бросать исключения
-function v_sheet_Load_RWD(ns) {
-  throw new Error('boom'); // так НЕЛЬЗЯ
-}
-```
-
----
-
-## 8. Анти-спагетти (SRP внутри шагов)
-
-**❌ Плохо — один шаг делает всё:**
-
-```javascript
-function v_price_Build_RWD(ns) {
-  const a_Result = [];
-  for (let i = 0; i < ns.a_Items.length; i++) {
-    const a_Item = ns.a_Items[i];
-    if (!a_Item.price || typeof a_Item.price !== 'number') {
-      ns.s_Error = `item ${i}: invalid price`;
-      return;
+```php
+function v_sheet_Load_RWD(array &$ns): void {
+    $a_Data = loadSheet();
+    if ($a_Data === []) {
+        $ns['s_Error'] = 'v_sheet_Load_RWD: empty data';
+        return;
     }
-    const f_Price = a_Item.price * (a_Item.qty || 1);
-    if (f_Price <= 0) {
-      ns.s_Error = `item ${i}: non-positive`;
-      return;
-    }
-    a_Result.push({ method: 'price.update', params: { price: f_Price } });
-  }
-  ns.a_Commands = a_Result;
-}
-```
-
-**✅ Хорошо — шаг только оркестрирует:**
-
-```javascript
-function v_price_Build_RWD(ns) {
-  const o_Result = a_price_Commands_Build(ns.a_Items);
-  if (!o_Result.ok) {
-    ns.s_Error = o_Result.error;
-    return;
-  }
-  ns.a_Commands = o_Result.value;
-}
-
-function a_price_Commands_Build(a_Items) {
-  const a_Commands = [];
-  for (let i = 0; i < a_Items.length; i++) {
-    const o_Cmd = a_price_Command_Build(a_Items[i]);
-    if (!o_Cmd.ok) return { ok: false, error: `item ${i}: ${o_Cmd.error}` };
-    a_Commands.push(o_Cmd.value);
-  }
-  return { ok: true, value: a_Commands };
-}
-
-function a_price_Command_Build(a_Item) {
-  const o_Total = f_price_Total_Calc(a_Item);
-  if (!o_Total.ok) return o_Total;
-  return { ok: true, value: { method: 'price.update', params: { price: o_Total.value } } };
-}
-
-function f_price_Total_Calc(a_Item) {
-  if (!a_Item.price || typeof a_Item.price !== 'number') {
-    return { ok: false, error: 'invalid price' };
-  }
-  const f_Total = a_Item.price * (a_Item.qty || 1);
-  if (f_Total <= 0) return { ok: false, error: 'non-positive total' };
-  return { ok: true, value: f_Total };
+    $ns['a_Data'] = $a_Data;
 }
 ```
 
 ---
 
-## 9. s_callable_Name_Get
+## 7. Анти-спагетти (SRP внутри шагов)
 
-```javascript
-function s_callable_Name_Get(c_Fn) {
-  if (c_Fn.name) return c_Fn.name;
+Шаг только оркестрирует; тяжёлая логика — в чистых помощниках, возвращающих `ok/error`:
 
-  const s_Fn = c_Fn.toString();
-  const a_Arrow = s_Fn.match(/^\(?([a-zA-Z_$][a-zA-Z0-9_$]*)\)?\s*=>/);
-  if (a_Arrow) return a_Arrow[1] || '{arrow}';
+```php
+function v_price_Build_RWD(array &$ns): void {
+    $o_Result = a_price_Commands_Build($ns['a_Items']);
+    if (!$o_Result['ok']) {
+        $ns['s_Error'] = $o_Result['error'];
+        return;
+    }
+    $ns['a_Commands'] = $o_Result['value'];
+}
 
-  const a_Func = s_Fn.match(/^function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/);
-  if (a_Func) return a_Func[1];
+function a_price_Commands_Build(array $a_Items): array {
+    $a_Commands = [];
+    foreach ($a_Items as $i => $a_Item) {
+        $o_Cmd = a_price_Command_Build($a_Item);
+        if (!$o_Cmd['ok']) {
+            return ['ok' => false, 'error' => "item $i: {$o_Cmd['error']}"];
+        }
+        $a_Commands[] = $o_Cmd['value'];
+    }
+    return ['ok' => true, 'value' => $a_Commands];
+}
 
-  return '{anonymous}';
+function a_price_Command_Build(array $a_Item): array {
+    $f_Total = $a_Item['price'] * ($a_Item['qty'] ?? 1);
+    if ($f_Total <= 0) {
+        return ['ok' => false, 'error' => 'non-positive total'];
+    }
+    return ['ok' => true, 'value' => $f_Total];
 }
 ```
+
+---
+
+## 8. Профилирование (v_profile_RWD)
+
+Финальный шаг всегда последний: выводит таблицу `a_Profile` (статус OK/ERR,
+длительность, пик памяти, итог, финальный статус цепочки).
 
 ---
 
 ## Правила
 
 **НАДО:**
-- Шаги принимают и мутируют `ns` — без возврата значений
+- Шаги принимают и мутируют `ns` — не возвращают значений
 - Шаги вызываются только через `v_RWD()`
 - Имена шагов: `v_` + `_RWD`
-- Поля `NS_Container` с венгерской нотацией: `s_Error`, `a_Log`, `f_RWD_Start_Time`
-- Ошибка останавливает цепочку через `ns.s_Error`, а не исключения
+- Поля контейнера с венгерской нотацией: `s_Error`, `a_Log`, `f_RWD_Start_Time`
+- Ошибка останавливает цепочку через `s_Error`, а не исключения
 - `v_profile_RWD` всегда последний
 
 **НЕЛЬЗЯ:**

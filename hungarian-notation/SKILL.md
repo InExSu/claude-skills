@@ -4,146 +4,79 @@ license: MIT
 description: >
   Apply this skill when the user requests Hungarian notation, prefix-typed naming,
   or activates via @hungarian or "венгерская нотация". Covers variables, functions,
-  object keys, class properties, and constants in any language (JS, PHP, Python, etc.).
+  object keys, class properties, and constants in ANY language (JS, PHP, Python, Go).
   Do NOT apply without explicit activation — this is an opt-in coding style.
 ---
 
-# Hungarian Notation (Universal)
+# Hungarian Notation (universal)
 
-## Core Principle
+## Core principle
 
-Every identifier carries a type prefix.
-exceptions:
-  global_objects:
-    - ns     # NooSphere global object — NO prefix
-    - rwd    # railway decorator void - NO prefix v_
+Every identifier carries a type prefix. The prefixes are language-neutral; only the
+casing style of the host language applies (camelCase / snake_case / PascalCase).
 
-## Prefix Table
+## Prefix table
 
-| Prefix | Type         | Example                   |
-|--------|--------------|---------------------------|
-| `a_`   | array / list | `a_Items = []`            |
-| `b_`   | boolean      | `b_IsActive = true`       |
-| `c_`   | callable     | `c_Fn = trim`             |
-| `f_`   | float        | `f_Price = 99.99`         |
-| `i_`   | integer      | `i_Count = 10`            |
-| `m_`   | mixed        | `m_Value = m_Value_Get()`     |
-| `o_`   | object       | `o_User = new User()`     |
-| `r_`   | result       | `r_result = r_Cache(ns)`  |
-| `s_`   | string       | `s_Name = 'John'`         |
-| `v_`   | void         | `v_user_Save` (functions) |
+| Prefix | Type     | Example             |
+|--------|----------|---------------------|
+| `a_`   | array    | `a_Items`           |
+| `b_`   | boolean  | `b_IsActive`        |
+| `c_`   | callable | `c_Fn`              |
+| `f_`   | float    | `f_Price`           |
+| `i_`   | integer  | `i_Count`           |
+| `m_`   | mixed    | `m_Value`           |
+| `o_`   | object   | `o_User`            |
+| `r_`   | result   | `r_Result`          |
+| `s_`   | string   | `s_Name`            |
+| `v_`   | void     | `v_user_Save` (fn)  |
 
-Here's the translation:
+Exceptions: global objects `ns` (Noosphere) and `rwd` (railway decorator) keep **no** prefix.
 
----
+## Variables / parameters / keys
 
-**Exception for `ns`:**
+Prefix applies to: variables, function parameters, object keys, class properties, array keys.
 
-`ns` is a reserved name for the global **NooSphere** object in my programs. It remains unchanged — the `o_` prefix MUST NOT be applied to it.
-
-That is:
-- ✅ `ns` — allowed (global NooSphere object)
-- ❌ `o_ns` — DO NOT use, do not rename
-
-All other objects receive the `o_` prefix as usual.
-
-## Variables
-
-```js
-let i_UserId   = 1;
-let s_UserName = 'John';
-let f_Price    = 99.99;
-let b_IsActive = true;
-let a_Roles    = ['admin', 'user'];
-let o_Profile  = { s_city: 'Moscow' };
+```php
+$a_Items     = [];
+$b_IsActive  = true;
+$i_Count     = 10;
+$s_Name      = 'John';
+$o_User      = new User();
+$f_Price     = 99.99;
 ```
 
-## Functions — `{ReturnType}_{Object}_{Verb}`
+## Functions
 
-Structure: `{ReturnType}_{Object}_{Verb}`
-
-| Function            | Returns |
-|---------------------|---------|
-| `a_user_DataLoad`   | array   |
-| `b_form_Validate`   | boolean |
-| `b_user_Exists`     | boolean |
-| `f_order_TotalCalc` | float   |
-| `i_user_AgeGet`     | integer |
-| `o_user_Create`     | object  |
-| `r_User_Create`     | result  |
-| `s_user_NameGet`    | string  |
-| `v_user_Save`       | void    |
-
+Structure: `{ReturnType}_{Object}_{Verb}`.
 Approved verbs: `Get` `Set` `Load` `Save` `Create` `Update` `Delete` `Check` `Validate` `Process` `Calc` `Format` `Find`
 
-```js
-function a_user_DataLoad() {
-    return { i_id: 1, s_name: 'John' };
-}
-
-function s_user_NameGet(i_UserId) {
-    return 'John';
-}
-
-function b_user_Exists(i_UserId) {
-    return i_UserId > 0;
-}
+```php
+function s_user_NameGet(int $i_UserId): string { ... }
+function b_user_Exists(int $i_UserId): bool { ... }
+function v_user_Save(array $a_Data): void { ... }
 ```
 
-## Object Keys
-
-```js
-let o_User = {
-    i_id:       1,
-    s_name:     'John Doe',
-    f_salary:   50000.00,
-    b_isActive: true,
-    a_roles:    ['admin', 'user'],
-    o_profile:  { s_city: 'Moscow' }
-};
-```
-
-## Class Properties
-
-```js
-class User {
-    i_id       = 0;
-    s_name     = '';
-    f_balance  = 0.0;
-    b_isActive = false;
-    a_roles    = [];
-
-    a_user_DataGet() {
-        return { i_id: this.i_id, s_name: this.s_name };
-    }
-
-    v_user_Save() { /* persists */ }
-}
-```
+Casing follows the host language (camelCase in JS/TS, snake_case in PHP/Python, etc.) — prefixes stay identical.
 
 ## Constants
 
-Include the value in the name as a suffix:
-
-```js
-const i_MAX_USERS_100  = 100;
-const s_APP_NAME_MyApp = 'MyApp';
-```
+The name includes the stored value as suffix: `MAX_USERS_100`, `APP_NAME_MyApp`.
+In typed languages keep the type prefix: `i_MAX_USERS_100 = 100` (JS); in PHP constants carry no `$`.
 
 ## Exceptions
 
 Loop counters `i`, `j`, `k` are allowed bare — no prefix required.
 
-## Rules (for AI)
+## Rules
 
 MUST:
-- Prefix every variable, parameter, function, object key, class property
-- Use approved verb list for function names
+- prefix every variable, parameter, function, object key, class property;
+- use approved verbs in function names.
 
 MUST NOT:
-- Use postfixes instead of prefixes
-- Use `goto`
-- Use `null` — use typed empty values (`''`, `0`, `[]`, `false`) instead
+- use postfixes instead of prefixes;
+- use `goto`;
+- use `null` — use typed empty values (`''`, `0`, `[]`, `false`) instead.
 
 ## Activation
 
