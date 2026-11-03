@@ -4,7 +4,7 @@
 
 **A curated collection of [Agent Skills](https://agentskills.io) for AI agents** — coding standards, testing discipline, architecture patterns, agent design and DRAKON diagram tooling. They work with any agent that implements the open standard, including [Claude Code](https://claude.com/claude-code).
 
-[![Skills](https://img.shields.io/badge/skills-20-blue?style=flat-square)](#-skill-catalog)
+[![Skills](https://img.shields.io/badge/skills-25-blue?style=flat-square)](#-skill-catalog)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-spotlight)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-skill-catalog)
@@ -78,6 +78,16 @@ flowchart LR
 | **[spec-driven-dev](spec-driven-dev/SKILL.md)** | Specification first, then tests, then code. Risk-calibrated depth (mini-spec for utilities, full spec + data-protection for writes). Every requirement traceable to a test. Anti-patterns explicitly forbidden. |
 | **[gauntlet-loop](gauntlet-loop/SKILL.md)** | Goal + bar → small parts → builder builds → independent critic compares → fix → repeat. No fixed round count. The critic has no memory of the builder's reasoning. *(method, not a code skill)* |
 
+### 🎯 Prompting & review
+
+| Skill | What it enforces |
+|---|---|
+| **[altitude-prompt](altitude-prompt/SKILL.md)** | Ask for the outcome, not the task. "Build a dashboard that answers the questions we ask every week" beats "build a dashboard with data" — the agent decomposes the goal itself and the result is checked against it. |
+| **[depth-prompt](depth-prompt/SKILL.md)** | Ask for depth, not adequacy. Adding "make it as good as it can be" makes the agent probe edge cases, handle errors and add tests instead of stopping at "works". |
+| **[range-prompt](range-prompt/SKILL.md)** | Describe an application by what it does for people (verbs), then spawn subagents per domain, so a review covers the whole surface instead of one angle. |
+| **[drift-check](drift-check/SKILL.md)** | After implementation, diff the code against the plans and READMEs: list every divergence and bug, then propose fixes. Catches the silent gap between what was agreed and what was built. |
+| **[elephant-goldfish-review](elephant-goldfish-review/SKILL.md)** | The author (elephant) keeps the context and writes the plan; reviewers (goldfish) see it with zero context and attack it — simpler alternative, understandable without context, scalable, unambiguous enough to build from. |
+
 ### 🤖 AI agents, 🐉 Diagrams & 🎮 Game graphics
 
 | Skill | What it enforces |
@@ -113,9 +123,13 @@ claude-skills/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── AGENTS.md                  ← machine-readable notes for AI agents consuming this repo
 ├── install-links.sh           ← symlink every skill into ~/.claude/skills
+├── altitude-prompt/
+│   └── SKILL.md
 ├── casual-game-graphics/
 │   └── SKILL.md
 ├── constant-naming-convention/
+│   └── SKILL.md
+├── depth-prompt/
 │   └── SKILL.md
 ├── drakonhub/
 │   ├── SKILL.md
@@ -125,6 +139,10 @@ claude-skills/
 │   └── templates/{minimal,choice-and-loop,silhouette,select,parallel-and-timer}.drakon
 │                  {workout,parallel-and-timer}.dsl {mind-map.graf,silhouette.mmd}
 │                  {oauth2-flow.seq,order-state.sm}
+├── drift-check/
+│   └── SKILL.md
+├── elephant-goldfish-review/
+│   └── SKILL.md
 ├── gauntlet-loop/
 │   └── SKILL.md
 ├── hungarian-notation/SKILL.md
@@ -136,6 +154,8 @@ claude-skills/
 ├── proof-of-correctness/
 │   └── SKILL.md
 ├── quality-tests/SKILL.md
+├── range-prompt/
+│   └── SKILL.md
 ├── ru-psychoagent/SKILL.md
 ├── rwd-chain/SKILL.md
 ├── self-test-design/SKILL.md

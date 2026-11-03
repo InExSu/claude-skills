@@ -4,7 +4,7 @@
 
 **Коллекция [Agent Skills](https://agentskills.io) для AI-агентов** — стандарты кода, дисциплина тестирования, архитектурные паттерны, проектирование агентов и инструменты для диаграмм DRAKON. Подходит любому агенту, реализующему открытый стандарт, в том числе [Claude Code](https://claude.com/claude-code).
 
-[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-20-blue?style=flat-square)](#-каталог-скиллов)
+[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-25-blue?style=flat-square)](#-каталог-скиллов)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-под-микроскопом)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-каталог-скиллов)
@@ -78,6 +78,16 @@ flowchart LR
 | **[spec-driven-dev](spec-driven-dev/SKILL.md)** | Спецификация первична, потом тесты, потом код. Глубина по риску (мини-спека для утилит, полная + защита данных для записи вовне). Каждое требование трассируется до теста. Антипаттерны запрещены явно. |
 | **[gauntlet-loop](gauntlet-loop/SKILL.md)** | Цель + планка → мелкие части → builder строит → независимый critic сравнивает → починка → повтор. Без фиксированного числа раундов. Critic не имеет памяти рассуждений builder. *(метод, не код-скилл)* |
 
+### 🎯 Промптинг и ревью
+
+| Скилл | Что он требует |
+|---|---|
+| **[altitude-prompt](altitude-prompt/SKILL.md)** | Просить результат, а не задачу. «Панель, которая отвечает на вопросы, задаваемые каждую неделю» лучше, чем «панель с данными»: агент сам разбивает цель на задачи, а результат проверяется по цели. |
+| **[depth-prompt](depth-prompt/SKILL.md)** | Просить глубину, а не достаточность. Добавка «сделай настолько хорошо, насколько возможно» заставляет агента проверять крайние случаи, обрабатывать ошибки и писать тесты вместо остановки на «работает». |
+| **[range-prompt](range-prompt/SKILL.md)** | Описывать приложение через то, что оно делает для людей (глаголами), и разводить субагентов по областям — ревью покрывает всю поверхность, а не один угол. |
+| **[drift-check](drift-check/SKILL.md)** | После реализации сверить код с планами и README: список всех расхождений и багов, затем предложения по исправлению. Ловит тихий разрыв между договорённостью и тем, что построено. |
+| **[elephant-goldfish-review](elephant-goldfish-review/SKILL.md)** | Автор (elephant) держит контекст и пишет план; ревьюеры (goldfish) видят его с нулевым контекстом и атакуют: есть ли способ проще, понятен ли план без контекста, масштабируемость, хватает ли ясности для реализации без угадывания. |
+
 ### 🤖 ИИ-агенты, 🐉 Диаграммы и 🎮 Графика игр
 
 | Скилл | Что он требует |
@@ -115,9 +125,13 @@ claude-skills/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── AGENTS.md                  ← машиночитаемые заметки для AI-агентов, потребляющих репозиторий
 ├── install-links.sh           ← слинковать все скиллы в ~/.claude/skills
+├── altitude-prompt/
+│   └── SKILL.md
 ├── casual-game-graphics/
 │   └── SKILL.md
 ├── constant-naming-convention/
+│   └── SKILL.md
+├── depth-prompt/
 │   └── SKILL.md
 ├── drakonhub/
 │   ├── SKILL.md
@@ -127,6 +141,10 @@ claude-skills/
 │   └── templates/{minimal,choice-and-loop,silhouette,select,parallel-and-timer}.drakon
 │                  {workout,parallel-and-timer}.dsl {mind-map.graf,silhouette.mmd}
 │                  {oauth2-flow.seq,order-state.sm}
+├── drift-check/
+│   └── SKILL.md
+├── elephant-goldfish-review/
+│   └── SKILL.md
 ├── gauntlet-loop/
 │   └── SKILL.md
 ├── hungarian-notation/SKILL.md
@@ -138,6 +156,8 @@ claude-skills/
 ├── proof-of-correctness/
 │   └── SKILL.md
 ├── quality-tests/SKILL.md
+├── range-prompt/
+│   └── SKILL.md
 ├── ru-psychoagent/SKILL.md
 ├── rwd-chain/SKILL.md
 ├── self-test-design/SKILL.md

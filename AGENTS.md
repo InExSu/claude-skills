@@ -45,5 +45,7 @@ Architecture: `pure-functions`, `if-condition-refactor`, `noosphere`,
 `state-machine-if-improves-understanding`, `spaghetti-rwd`. Naming: `hungarian-notation`
 (opt-in), `constant-naming-convention`, `explicit-boolean-returns`, `token-economy`.
 Pipelines & process: `rwd-chain`, `spec-driven-dev`, `gauntlet-loop`.
+Prompting & review: `altitude-prompt`, `depth-prompt`, `range-prompt`,
+`drift-check`, `elephant-goldfish-review`.
 Agents & diagrams: `ru-psychoagent`, `orca-ade`, `drakonhub` (DSL → JSON-диаграмма ДРАКОН,
 просмотр на https://drakonhub.com). Game graphics: `casual-game-graphics`.
