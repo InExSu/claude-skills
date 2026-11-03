@@ -1,0 +1,30 @@
+#!/bin/sh
+# Проверка репозитория перед коммитом — ровно то же, что гоняет CI.
+#
+# Ловит: frontmatter скиллов (name, license, описание), расхождение каталога
+# в README с реальными папками, битые относительные ссылки, сломанные шаблоны
+# drakonhub. Если хоть одна проверка падает — коммит не создаётся.
+#
+# Включить один раз после клона (сам хук в репозитории, включается локально):
+#     git config core.hooksPath .githooks
+#
+# Отключить для одного коммита: git commit --no-verify
+# Прогнать вручную:            .githooks/pre-commit
+
+set -e
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+echo "→ скиллы, каталог README, ссылки"
+python3 .github/scripts/check_skills.py
+
+echo "→ шаблоны drakonhub"
+for file in drakonhub/templates/*.drakon drakonhub/templates/*.graf \
+            drakonhub/templates/*.seq drakonhub/templates/*.sm; do
+  python3 drakonhub/scripts/drakon_tool.py check "$file" > /dev/null
+done
+for file in drakonhub/templates/*.drakon; do
+  python3 drakonhub/scripts/drakon_dsl.py roundtrip "$file" > /dev/null
+done
+
+echo "✓ проверки прошли"

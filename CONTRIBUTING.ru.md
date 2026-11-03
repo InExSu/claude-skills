@@ -84,6 +84,16 @@ python3 .github/scripts/check_skills.py
 
 И эта проверка, и скрипты `drakonhub` запускаются автоматически на каждом pull request — см. [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Красный прогон означает, что одна из команд выше упала, поэтому запускайте их локально, а не отлаживайте через CI.
 
+### Пусть хук прогоняет их за вас
+
+В репозитории лежит [`.githooks/pre-commit`](.githooks/pre-commit): он выполняет те же проверки перед каждым коммитом, поэтому сломанный `SKILL.md` или устаревший каталог README останавливаются на `git commit`, а не в CI. Включается один раз после клона:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Пропустить для одного коммита: `git commit --no-verify`.
+
 ---
 
 ## Процесс pull request

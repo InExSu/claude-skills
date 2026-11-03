@@ -84,6 +84,16 @@ It validates the frontmatter of every skill against the specification (name shap
 
 Both this check and the `drakonhub` scripts run automatically on every pull request — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml). A red run means one of the commands above failed, so run them locally before pushing rather than debugging through CI.
 
+### Let the hook run them for you
+
+The repository ships [`.githooks/pre-commit`](.githooks/pre-commit), which runs the same checks before every commit — a broken `SKILL.md` or a stale README catalog stops at `git commit`, not in CI. Enable it once after cloning:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Skip it for one commit with `git commit --no-verify`.
+
 ## Pull request process
 
 1. Fork the repository and create a branch: `git checkout -b add/my-skill`.

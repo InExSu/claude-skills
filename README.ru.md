@@ -107,6 +107,7 @@ claude-skills/
 ├── SECURITY.md                ← модель угроз и как сообщить
 ├── LICENSE                    ← MIT
 ├── .editorconfig
+├── .githooks/pre-commit       ← те же проверки, что в CI, перед каждым коммитом
 ├── .github/
 │   ├── workflows/ci.yml       ← проверки на каждый push и pull request
 │   ├── ISSUE_TEMPLATE/        ← формы бага и предложения скилла, плюс config.yml
@@ -225,6 +226,16 @@ python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon
 python3 scripts/drakon_render.py svg templates/silhouette.drakon /tmp/out.svg
 python3 scripts/drakon_render.py mermaid templates/silhouette.drakon /tmp/out.mmd
 ```
+
+### Хук перед коммитом (рекомендуется)
+
+В репозитории лежит хук, который гоняет те же проверки перед каждым коммитом — сломанный `SKILL.md` или устаревший каталог README не доедет до CI. Включается один раз после клона:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Это всё — ни установки, ни зависимостей. Хук лежит в [`.githooks/pre-commit`](.githooks/pre-commit), работает около секунды. Пропустить для одного коммита: `git commit --no-verify`; прогнать вручную: `.githooks/pre-commit`.
 
 ---
 

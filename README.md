@@ -105,6 +105,7 @@ claude-skills/
 ├── SECURITY.md                ← threat model and how to report
 ├── LICENSE                    ← MIT
 ├── .editorconfig
+├── .githooks/pre-commit       ← same checks as CI, before every commit
 ├── .github/
 │   ├── workflows/ci.yml       ← checks every push and pull request
 │   ├── ISSUE_TEMPLATE/        ← bug report and skill proposal forms, plus config.yml
@@ -223,6 +224,16 @@ python3 scripts/drakon_dsl.py roundtrip templates/minimal.drakon
 python3 scripts/drakon_render.py svg templates/silhouette.drakon /tmp/out.svg
 python3 scripts/drakon_render.py mermaid templates/silhouette.drakon /tmp/out.mmd
 ```
+
+### Pre-commit hook (recommended)
+
+The repository ships a hook that runs the same checks before every commit, so a broken `SKILL.md` or a stale README catalog never reaches CI. Enable it once after cloning:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+That is all — no installation, no dependencies. The hook lives in [`.githooks/pre-commit`](.githooks/pre-commit) and takes about a second. Skip it for a single commit with `git commit --no-verify`; run it by hand with `.githooks/pre-commit`.
 
 ---
 
