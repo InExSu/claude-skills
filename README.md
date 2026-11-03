@@ -233,7 +233,7 @@ The repository ships a hook that runs the same checks before every commit, so a 
 git config core.hooksPath .githooks
 ```
 
-That is all — no installation, no dependencies. The hook lives in [`.githooks/pre-commit`](.githooks/pre-commit) and takes about a second. Skip it for a single commit with `git commit --no-verify`; run it by hand with `.githooks/pre-commit`.
+That is all — no installation, no dependencies. The hook lives in [`.githooks/pre-commit`](.githooks/pre-commit) and takes a couple of seconds. Skip it for a single commit with `git commit --no-verify`; run it by hand with `.githooks/pre-commit`.
 
 ---
 

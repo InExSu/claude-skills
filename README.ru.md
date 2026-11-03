@@ -235,7 +235,7 @@ python3 scripts/drakon_render.py mermaid templates/silhouette.drakon /tmp/out.mm
 git config core.hooksPath .githooks
 ```
 
-Это всё — ни установки, ни зависимостей. Хук лежит в [`.githooks/pre-commit`](.githooks/pre-commit), работает около секунды. Пропустить для одного коммита: `git commit --no-verify`; прогнать вручную: `.githooks/pre-commit`.
+Это всё — ни установки, ни зависимостей. Хук лежит в [`.githooks/pre-commit`](.githooks/pre-commit), работает пару секунд. Пропустить для одного коммита: `git commit --no-verify`; прогнать вручную: `.githooks/pre-commit`.
 
 ---
 
