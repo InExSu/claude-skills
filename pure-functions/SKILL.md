@@ -1,7 +1,7 @@
 ---
 name: pure-functions
 license: MIT
-description: Чистые функции на JavaScript/TypeScript. Формат ok/error, предусловия/постусловия/инварианты, запрещённые конструкции, композиция. Используй при написании любых функций на JS/TS.
+description: Pure functions for JavaScript/TypeScript. Seven axioms: input→output mapping, determinism, no side effects, ok/error result format, preconditions/postconditions/invariants, forbidden constructs, composition. Use when writing or reviewing any JS/TS function. «Чистые функции», «pure functions», «формат ok/error», «предусловия», «инварианты». Do NOT apply to functions that legitimately manage global state (see noosphere skill).
 ---
 
 # Pure Functions — JavaScript/TypeScript
@@ -201,4 +201,9 @@ function a_price_CommandsBuild(a_items: Item[]): Result<PriceCommand[]> {
 > **Функция доказывает свою правильность через структуру.**
 
 Прошла предусловия → детерминированное преобразование → прошла постусловия → без побочных эффектов → математически верна.
-```
+
+## Cross-skill note: `null`
+
+`null` запрещён в чистых функциях — используйте типизированные пустые значения (`''`, `0`, `[]`, `false`).
+
+**Исключение (глобальное состояние `ns`):** в объекте `ns` (см. скилл `noosphere`) `null` допустим как маркер «ещё не установлено» — это состояние, а не возвращаемое значение функции. В конвейере `rwd-chain` поле `o_Error = null` означает «ошибки нет» — это единственное место, где `null` в доменных данных разрешён.

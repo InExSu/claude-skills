@@ -1,7 +1,11 @@
 ---
 name: drakonhub
 license: MIT
-description: Превращает текст в диаграмму ДРАКОН (.drakon) и ментальные карты (.graf): JSON-формат DrakonHub, семантика иконок, правила языка, DSL, валидатор и рендер. Используй, когда нужно представить алгоритм или процесс схемой ДРАКОН. Не используй для BPMN-процессов с событиями, UML и неструктурируемых текстов — отказ честен.
+description: >
+  Turn text into DRAKON diagrams (.drakon) and mind maps (.graf): JSON format, icon semantics,
+  language rules, DSL, validator, renderer. Use when the user wants to visualize an algorithm
+  or process as a DRAKON diagram. «Диаграмма ДРАКОН», «алгоритм схемой», «drakon», «mind map»,
+  «граф». Do NOT use for BPMN processes with events, UML, or unstructured text — say so honestly.
 ---
 
 # DrakonHub — диаграммы ДРАКОН из текста

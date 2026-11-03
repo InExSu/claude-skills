@@ -118,3 +118,79 @@ MUST NOT:
 @spaghetti
 ```
 or: "разбери спагетти по RWD", "раздели эту функцию на шаги"
+
+## Cross-references
+
+- **[noosphere](../noosphere/SKILL.md)** — shared state object `ns` that steps mutate
+- **[rwd-chain](../rwd-chain/SKILL.md)** — the step runner with profiling and error halting
+- **[pure-functions](../pure-functions/SKILL.md)** — each step should be a pure-ish function of `ns`
+
+## Example: before and after
+
+### Before — monolithic function (spaghetti)
+
+```javascript
+function processSpreadsheet(url, sheetName) {
+  const sheet = SpreadsheetApp.openByUrl(url).getSheetByName(sheetName);
+  if (!sheet) throw new Error('Sheet not found');
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return;
+  const headers = data[0];
+  const rows = data.slice(1);
+  const result = [];
+  for (const row of rows) {
+    if (!row[0]) continue;
+    const obj = {};
+    for (let i = 0; i < headers.length; i++) {
+      obj[headers[i]] = row[i];
+    }
+    obj._row = result.length + 2;
+    result.push(obj);
+  }
+  console.log('Processed ' + result.length + ' rows');
+  return result;
+}
+```
+
+### After — decomposed into RWD steps
+
+```javascript
+function getSheet_RWD(ns) {
+  ns.o_sheet = SpreadsheetApp.openByUrl(ns.s_Url).getSheetByName(ns.s_SheetName);
+  if (!ns.o_sheet) { ns.s_Error = 'Sheet not found'; return; }
+}
+
+function readData_RWD(ns) {
+  ns.a_Data = ns.o_sheet.getDataRange().getValues();
+  if (ns.a_Data.length < 2) return; // guard clause, no nested if
+}
+
+function parseRows_RWD(ns) {
+  const a_Headers = ns.a_Data[0];
+  const a_Rows = ns.a_Data.slice(1);
+  ns.a_Result = [];
+  for (const row of a_Rows) {
+    if (!row[0]) continue;
+    const obj = {};
+    for (let i = 0; i < a_Headers.length; i++) obj[a_Headers[i]] = row[i];
+    obj._row = ns.a_Result.length + 2;
+    ns.a_Result.push(obj);
+  }
+}
+
+function logResult_RWD(ns) {
+  if (!ns.a_Result) return;
+  console.log('Processed ' + ns.a_Result.length + ' rows');
+}
+
+// Orchestrator — same name, same signature, callers unchanged
+function processSpreadsheet(url, sheetName) {
+  const ns = { s_Url: url, s_SheetName: sheetName, a_Result: null, s_Error: null };
+  rwd(getSheet_RWD, ns);
+  rwd(readData_RWD, ns);
+  rwd(parseRows_RWD, ns);
+  rwd(logResult_RWD, ns);
+  if (ns.s_Error) throw new Error(ns.s_Error);
+  return ns.a_Result;
+}
+```

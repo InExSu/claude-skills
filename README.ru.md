@@ -4,7 +4,7 @@
 
 **Коллекция [Agent Skills](https://agentskills.io) для AI-агентов** — стандарты кода, дисциплина тестирования, архитектурные паттерны, проектирование агентов и инструменты для диаграмм DRAKON. Подходит любому агенту, реализующему открытый стандарт, в том числе [Claude Code](https://claude.com/claude-code).
 
-[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-14-blue?style=flat-square)](#-каталог-скиллов)
+[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-20-blue?style=flat-square)](#-каталог-скиллов)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-под-микроскопом)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-каталог-скиллов)
@@ -49,6 +49,7 @@ flowchart LR
 | **[tdd-bugfix](tdd-bugfix/SKILL.md)** | Исправление багов строго по циклу **RED → YELLOW → GREEN**: сначала падающий тест, воспроизводящий баг, затем минимальная заплатка, затем чистая правка. Патчить исходники до появления красного теста запрещено. |
 | **[quality-tests](quality-tests/SKILL.md)** | Тесты, которые проверяют поведение, а не наращивают покрытие. Таблица диагностики в начале плюс разделы об антипаттернах (тавтологичные тесты), о том, что тестировать, и почему набор тестов не ловит баги. |
 | **[self-test-design](self-test-design/SKILL.md)** | Программы проектируются как надёжные устройства: Design-For-Test, встроенное самотестирование (BIST/POST), контракт `TestPort`, таблицы переходов состояний. Золотое правило: проверяй **отсутствие нежелательного** поведения, а не только наличие желаемого. |
+| **[proof-of-correctness](proof-of-correctness/SKILL.md)** | Минимальное доказательство корректности кода — три вопроса (контракт, инвариант, граница доверия) за секунды, не часы. Ловит логические баги до запуска тестов. Без формальных методов (не Coq/Lean). |
 
 ### 🏗️ Архитектура и рефакторинг
 
@@ -69,18 +70,22 @@ flowchart LR
 | **[explicit-boolean-returns](explicit-boolean-returns/SKILL.md)** | Смысл кода возврата назван словами: предикат именуется да/нет-вопросом (0 = «да»), статус у вызова поясняется словами, один `return 0` с противоположными трактовками у двух читателей — болезнь, а не гибкость. |
 | **[token-economy](token-economy/SKILL.md)** | Каждый токен должен работать: никакой вежливости «для галочки» и пересказа уже сказанного — в промптах, инструкциях, документации и коде. |
 
-### 🔗 Конвейеры
+### 🔗 Конвейеры и процесс
 
 | Скилл | Что он требует |
 |---|---|
 | **[rwd-chain](rwd-chain/SKILL.md)** | Паттерн конвейера на JavaScript: каждый шаг — декорируемая функция над общим мутабельным `NS_Container`; если шаг выставил `s_Error`, цепочка останавливается. Поля для профилирования и логирования встроены. |
+| **[spec-driven-dev](spec-driven-dev/SKILL.md)** | Спецификация первична, потом тесты, потом код. Глубина по риску (мини-спека для утилит, полная + защита данных для записи вовне). Каждое требование трассируется до теста. Антипаттерны запрещены явно. |
+| **[gauntlet-loop](gauntlet-loop/SKILL.md)** | Цель + планка → мелкие части → builder строит → независимый critic сравнивает → починка → повтор. Без фиксированного числа раундов. Critic не имеет памяти рассуждений builder. *(метод, не код-скилл)* |
 
-### 🤖 ИИ-агенты и 🐉 Диаграммы
+### 🤖 ИИ-агенты, 🐉 Диаграммы и 🎮 Графика игр
 
 | Скилл | Что он требует |
 |---|---|
 | **[ru-psychoagent](ru-psychoagent/SKILL.md)** | Принципы архитектуры ИИ-агентов из отечественной психологической школы — Лурия, Выготский, Бернштейн, Бахтин: внутренняя речь, сенсомоторные петли, смыслообразование. |
 | **[drakonhub](drakonhub/SKILL.md)** | Превращает обычный текст в файл JSON с диаграммой ДРАКОН (`.drakon`) и структурированные ментальные карты (`.graf`): точная JSON-схема, семантика иконок, правила языка, валидатор и шаблоны. Просмотр — [DrakonHub](https://drakonhub.com/) Степана Митькина. |
+| **[orca-ade](orca-ade/SKILL.md)** | Управление Orca ADE CLI из агента: репозитории, worktree, терминалы, запуск/чтение/ожидание/уборка субагентов. Критический урок — проверяй бинарник агента в PATH до `worktree create --agent`. |
+| **[casual-game-graphics](casual-game-graphics/SKILL.md)** | Графика и визуальный фидбек простых браузерных игр (три-в-ряд, кликеры, головоломки): таблица game-feel событий, удержание в первые 10 секунд, бюджеты производительности, адаптивное качество, доступность. Антипаттерны запрещены. |
 
 ---
 
@@ -109,6 +114,8 @@ claude-skills/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── AGENTS.md                  ← машиночитаемые заметки для AI-агентов, потребляющих репозиторий
 ├── install-links.sh           ← слинковать все скиллы в ~/.claude/skills
+├── casual-game-graphics/
+│   └── SKILL.md
 ├── constant-naming-convention/
 │   └── SKILL.md
 ├── drakonhub/
@@ -119,15 +126,23 @@ claude-skills/
 │   └── templates/{minimal,choice-and-loop,silhouette,select,parallel-and-timer}.drakon
 │                  {workout,parallel-and-timer}.dsl {mind-map.graf,silhouette.mmd}
 │                  {oauth2-flow.seq,order-state.sm}
+├── gauntlet-loop/
+│   └── SKILL.md
 ├── hungarian-notation/SKILL.md
 ├── if-condition-refactor/SKILL.md
 ├── noosphere/SKILL.md
+├── orca-ade/
+│   └── SKILL.md
 ├── pure-functions/SKILL.md
+├── proof-of-correctness/
+│   └── SKILL.md
 ├── quality-tests/SKILL.md
 ├── ru-psychoagent/SKILL.md
 ├── rwd-chain/SKILL.md
 ├── self-test-design/SKILL.md
 ├── spaghetti-rwd/SKILL.md
+├── spec-driven-dev/
+│   └── SKILL.md
 ├── state-machine-if-improves-understanding/SKILL.md
 ├── tdd-bugfix/SKILL.md
 └── token-economy/SKILL.md
@@ -184,6 +199,19 @@ cp -R /tmp/claude-skills/tdd-bugfix ~/.claude/skills/
 2. **Opt-in скиллы** сами не срабатывают — нужен явный токен активации: `@hungarian` для венгерской нотации, `@spaghetti` для RWD-декомпозиции.
 3. **Комбинируйте осознанно.** `tdd-bugfix` + `quality-tests` или `spaghetti-rwd` + `noosphere` + `rwd-chain` образуют связный процесс: разложить, договориться о состоянии, собрать конвейер.
 4. **Указывайте на файл.** Для `drakonhub` упоминание конкретного `.drakon` плюс *«проверь»* или *«отрисуй»* выбирает нужный скрипт.
+
+### Карта композиций скиллов
+
+Скиллы задуманы для совместной работы. Частые комбинации:
+
+| Процесс | Скиллы | Что даёт |
+|---|---|---|
+| Багфикс с качеством | `tdd-bugfix` + `quality-tests` | Красный тест → минимальный патч → чистый рефакторинг, тесты проверяют поведение, а не покрытие |
+| Декомпозиция → состояние → конвейер | `spaghetti-rwd` + `noosphere` + `rwd-chain` | Разбить монолит, договориться об общем `ns`, собрать раннер шагов |
+| Чистые предикаты | `pure-functions` + `if-condition-refactor` | Сложные условия превращаются в тестируемые чистые функции с контрактом ok/error |
+| Спека → тест → код → багфикс | `spec-driven-dev` + `tdd-bugfix` | Написать спецификацию, вывести тесты, сгенерировать код, чинить баги в рамках спецификации |
+| Доказательство + самотест | `proof-of-correctness` + `self-test-design` | Рассуждать о контрактах при проектировании, проверять отсутствие нежелательного поведения при выполнении |
+| Имена + константы | `hungarian-notation` + `constant-naming-convention` | Типизированные имена со значениями, код документирует сам себя |
 
 ### Автоматические проверки
 

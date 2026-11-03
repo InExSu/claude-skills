@@ -56,3 +56,46 @@ description: |
 - Никогда не помечай баг исправленным, если весь набор тестов (не только новый тест) не прогнан и не зелёный.
 - Если пользователь просит "просто быстро поправить" без тестов — предупреди, что это отступление от процесса скилла, и предложи как минимум написать красный тест, даже если дальше идти в ускоренном режиме.
 - Если в проекте нет тестовой инфраструктуры вовсе — сначала помоги минимально её настроить (тестраннер + один пример), прежде чем писать красный тест для бага.
+
+## Пример: баг округления цены
+
+**Баг:** `calculatePrice(0.1, 0.2)` возвращает `0.30000000000000004` вместо `0.30`.
+
+### RED — тест, воспроизводящий баг
+
+```javascript
+// tests/price.test.js
+import { calculatePrice } from '../src/price.js';
+
+test('calculatePrice returns 0.30 for 0.1 + 0.2', () => {
+  expect(calculatePrice(0.1, 0.2)).toBe('0.30');
+});
+// Запуск: npm test -- calculatePrice
+// Результат: FAIL — received 0.30000000000000004, expected "0.30"
+```
+
+### YELLOW — минимальный патч
+
+```javascript
+// src/price.js  (до)
+export function calculatePrice(a, b) {
+  return a + b;
+}
+
+// src/price.js  (после — черновой фикс)
+export function calculatePrice(a, b) {
+  return (a + b).toFixed(2); // TODO(yellow): cleanup
+}
+// Тест проходит. Фикс уродлив, но тест зелёный.
+```
+
+### GREEN — чистый фикс
+
+```javascript
+// src/price.js  (clean)
+export function calculatePrice(a, b) {
+  const sum = a + b;
+  return sum.toFixed(2);
+}
+// Тест из RED проходит. Полный набор тестов проходит. TODO убран.
+```

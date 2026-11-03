@@ -1,6 +1,13 @@
 ---
 name: proof-of-correctness
-description: Практика минимального доказательства корректности кода — рассуждение о контракте, инварианте и границе доверия вместо формальной верификации. Используй эту практику при написании, ревью или обсуждении любого кода (функций, циклов, обработчиков границ доверия — внешних API, БД, пользовательского ввода), при формулировке commit-сообщений и тест-кейсов, а также когда пользователь просит "проверить логику", "найти баг", "доказать корректность" или ссылается на Явь/Навь/Правь/Ноосферу. Работает без формальных методов (не Coq/Lean) — это ежедневная гигиена рассуждения, ловящая ~98% логических багов за секунды.
+license: MIT
+description: >
+  Minimal correctness reasoning for code — three questions (contract, invariant, trust boundary)
+  asked in seconds, not hours. Use when reviewing non-trivial logic, searching for a logical bug,
+  discussing function contracts, formulating commit messages or test cases, or when the user says
+  "check logic", "find bug", "prove correctness", «проверить логику», «доказать корректность»,
+  «найти баг», or references Явь/Навь/Правь/Ноосфера. Works without formal methods (not Coq/Lean).
+  Do NOT apply to trivial one-liners or pure formatting changes.
 ---
 
 # Минимальное доказательство корректности
@@ -73,7 +80,7 @@ max_of_list(xs) → max(xs)
 
 ## Связь с Явь/Навь/Правь/Ноосфера
 
-Используется, когда пользователь оперирует этими терминами (см. также предпочтения пользователя по стилю кода: Noosphere state, Result-монада, машины состояний Шалыто, SRP).
+Используется, когда пользователь оперирует этими терминами (см. также скилл [noosphere](../noosphere/SKILL.md) для паттерна глобального состояния).
 
 - **Явь** — то, что доказано (контракты, инварианты, типы).
 - **Навь** — то, что наблюдается (внешний мир, ответы внешних систем).

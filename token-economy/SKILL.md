@@ -2,7 +2,11 @@
 name: token-economy
 license: MIT
 description: >
-  Жёсткая экономия токенов в промптах, ответах и коде. Применяй всегда, когда пишешь что-либо для LLM (промпты, системные инструкции, документацию, код) или когда пользователь говорит о "токенах", "cost", "экономии", "сжатии". Основан на подходах Карпатого к эффективным промптам.
+  Token economy in prompts, answers, and code. Use when writing for LLMs (prompts, system
+  instructions, docs, code) or when the user mentions "tokens", "cost", "compression",
+  «токены», «экономия», «сжатие». Principles based on Karpathy's approach to effective prompts.
+  «Экономия токенов», «token economy», «сжатие промптов». Do NOT apply to user-facing prose
+  where clarity matters more than token count.
 ---
 
 # Token Economy (Карпатый style)

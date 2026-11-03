@@ -40,9 +40,10 @@
 
 ## Каталог (кратко)
 
-Testing: `tdd-bugfix`, `quality-tests`, `self-test-design`. Architecture:
-`pure-functions`, `if-condition-refactor`, `noosphere`,
+Testing: `tdd-bugfix`, `quality-tests`, `self-test-design`, `proof-of-correctness`.
+Architecture: `pure-functions`, `if-condition-refactor`, `noosphere`,
 `state-machine-if-improves-understanding`, `spaghetti-rwd`. Naming: `hungarian-notation`
-(opt-in), `constant-naming-convention`, `token-economy`. Pipelines: `rwd-chain`.
-Agents: `ru-psychoagent`. Diagrams: `drakonhub` (DSL → JSON-диаграмма ДРАКОН,
-просмотр на https://drakonhub.com).
+(opt-in), `constant-naming-convention`, `explicit-boolean-returns`, `token-economy`.
+Pipelines & process: `rwd-chain`, `spec-driven-dev`, `gauntlet-loop`.
+Agents & diagrams: `ru-psychoagent`, `orca-ade`, `drakonhub` (DSL → JSON-диаграмма ДРАКОН,
+просмотр на https://drakonhub.com). Game graphics: `casual-game-graphics`.

@@ -4,7 +4,7 @@
 
 **A curated collection of [Agent Skills](https://agentskills.io) for AI agents** — coding standards, testing discipline, architecture patterns, agent design and DRAKON diagram tooling. They work with any agent that implements the open standard, including [Claude Code](https://claude.com/claude-code).
 
-[![Skills](https://img.shields.io/badge/skills-14-blue?style=flat-square)](#-skill-catalog)
+[![Skills](https://img.shields.io/badge/skills-20-blue?style=flat-square)](#-skill-catalog)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-spotlight)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-skill-catalog)
@@ -49,6 +49,7 @@ flowchart LR
 | **[tdd-bugfix](tdd-bugfix/SKILL.md)** | Bug fixing through a strict **RED → YELLOW → GREEN** cycle: first a failing test that reproduces the bug, then a minimal patch, then a clean refactor. Never patch source code before the red test exists. |
 | **[quality-tests](quality-tests/SKILL.md)** | Tests that check behavior instead of inflating coverage. A diagnostic start table plus sections on antipatterns (tautological tests), what to test, and why a suite fails to catch bugs. |
 | **[self-test-design](self-test-design/SKILL.md)** | Build software like reliable hardware: Design-For-Test, built-in self-test (BIST/POST), the `TestPort` contract, state-transition tables. The golden rule: verify the **absence of unwanted** behavior, not only the presence of wanted behavior. |
+| **[proof-of-correctness](proof-of-correctness/SKILL.md)** | Minimal correctness reasoning for any code fragment — three questions (contract, invariant, trust boundary) asked in seconds, not hours. Catches logical bugs before tests run. No formal methods (not Coq/Lean). |
 
 ### 🏗️ Architecture & refactoring
 
@@ -69,18 +70,22 @@ flowchart LR
 | **[explicit-boolean-returns](explicit-boolean-returns/SKILL.md)** | Return-code meaning is stated in words: a predicate is named as a yes/no question (0 = yes), a status is glossed in words at the call site, and one `return 0` read with opposite meanings by two callers is a defect, not flexibility. |
 | **[token-economy](token-economy/SKILL.md)** | Every token must earn its place: no politeness padding, no redundant restatement, in prompts, instructions, docs and code. |
 
-### 🔗 Pipelines
+### 🔗 Pipelines & process
 
 | Skill | What it enforces |
 |---|---|
 | **[rwd-chain](rwd-chain/SKILL.md)** | JavaScript pipeline pattern: each step is a decorated function over a shared mutable `NS_Container`; any step setting `s_Error` halts the chain. Built-in profiling and logging fields. |
+| **[spec-driven-dev](spec-driven-dev/SKILL.md)** | Specification first, then tests, then code. Risk-calibrated depth (mini-spec for utilities, full spec + data-protection for writes). Every requirement traceable to a test. Anti-patterns explicitly forbidden. |
+| **[gauntlet-loop](gauntlet-loop/SKILL.md)** | Goal + bar → small parts → builder builds → independent critic compares → fix → repeat. No fixed round count. The critic has no memory of the builder's reasoning. *(method, not a code skill)* |
 
-### 🤖 AI agents & 🐉 Diagrams
+### 🤖 AI agents, 🐉 Diagrams & 🎮 Game graphics
 
 | Skill | What it enforces |
 |---|---|
 | **[ru-psychoagent](ru-psychoagent/SKILL.md)** | Architecture principles for AI agents drawn from the Russian psychological school — Luria, Vygotsky, Bernstein, Bakhtin: internal speech, sensorimotor loops, sense-making. |
 | **[drakonhub](drakonhub/SKILL.md)** | Turns ordinary text into a JSON file containing a DRAKON diagram (`.drakon`) and structured mind maps (`.graf`): exact JSON schema, icon semantics, language rules, a validator and templates. Viewing — [DrakonHub](https://drakonhub.com/) by Stepan Mitkin. |
+| **[orca-ade](orca-ade/SKILL.md)** | Driving the Orca ADE CLI from inside an agent: repos, worktrees, terminals, subagent launch/read/wait/cleanup. The critical lesson — verify the agent binary is in PATH before `worktree create --agent`. |
+| **[casual-game-graphics](casual-game-graphics/SKILL.md)** | Graphics and visual feedback for simple browser games (match-3, clickers, puzzles): game-feel event table, first-10-seconds retention, performance budgets, adaptive quality, accessibility. Anti-patterns forbidden. |
 
 ## 🐉 drakonhub spotlight
 
@@ -107,6 +112,8 @@ claude-skills/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── AGENTS.md                  ← machine-readable notes for AI agents consuming this repo
 ├── install-links.sh           ← symlink every skill into ~/.claude/skills
+├── casual-game-graphics/
+│   └── SKILL.md
 ├── constant-naming-convention/
 │   └── SKILL.md
 ├── drakonhub/
@@ -117,15 +124,23 @@ claude-skills/
 │   └── templates/{minimal,choice-and-loop,silhouette,select,parallel-and-timer}.drakon
 │                  {workout,parallel-and-timer}.dsl {mind-map.graf,silhouette.mmd}
 │                  {oauth2-flow.seq,order-state.sm}
+├── gauntlet-loop/
+│   └── SKILL.md
 ├── hungarian-notation/SKILL.md
 ├── if-condition-refactor/SKILL.md
 ├── noosphere/SKILL.md
+├── orca-ade/
+│   └── SKILL.md
 ├── pure-functions/SKILL.md
+├── proof-of-correctness/
+│   └── SKILL.md
 ├── quality-tests/SKILL.md
 ├── ru-psychoagent/SKILL.md
 ├── rwd-chain/SKILL.md
 ├── self-test-design/SKILL.md
 ├── spaghetti-rwd/SKILL.md
+├── spec-driven-dev/
+│   └── SKILL.md
 ├── state-machine-if-improves-understanding/SKILL.md
 ├── tdd-bugfix/SKILL.md
 └── token-economy/SKILL.md
@@ -182,6 +197,19 @@ Or symlink every skill from a clone, so `git pull` updates them in place:
 2. **Opt-in skills** never fire on their own — they require an explicit activation token: `@hungarian` for Hungarian notation, `@spaghetti` for the RWD decomposition.
 3. **Combine deliberately.** `tdd-bugfix` + `quality-tests`, or `spaghetti-rwd` + `noosphere` + `rwd-chain`, form a coherent workflow: decompose, agree on state, wire the pipeline.
 4. **Point at a file.** For `drakonhub`, referencing a concrete `.drakon` file plus *"check it"* or *"render it"* selects the right script.
+
+### Skill composition map
+
+Skills are designed to compose. Common combinations:
+
+| Workflow | Skills | What it gives you |
+|---|---|---|
+| Bug fix with quality | `tdd-bugfix` + `quality-tests` | Red test → minimal patch → clean refactor, with tests that check behavior not coverage |
+| Decompose → state → pipeline | `spaghetti-rwd` + `noosphere` + `rwd-chain` | Split a monolith, agree on shared `ns`, wire the step runner |
+| Pure predicates | `pure-functions` + `if-condition-refactor` | Complex conditionals become testable pure functions with ok/error contracts |
+| Spec → test → code → bugfix | `spec-driven-dev` + `tdd-bugfix` | Write the spec, derive tests, generate code, fix bugs within the spec framework |
+| Proof + self-test | `proof-of-correctness` + `self-test-design` | Reason about contracts at design time, verify absence of unwanted behavior at runtime |
+| Naming + constants | `hungarian-notation` + `constant-naming-convention` | Type-prefixed names with values embedded, so code documents itself |
 
 ### Automated checks
 

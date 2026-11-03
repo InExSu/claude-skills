@@ -1,7 +1,14 @@
 ---
 name: self-test-design
 license: MIT
-description: Design and build software like reliable hardware devices — with testability engineered in from the start (Design-For-Test), not bolted on afterward. Apply when architecting programs, modules, games, services, or APIs; when discussing "self-testing", "built-in test", "самотестирование", reliability, QA automation, flaky behavior, or state-machine bugs. Also applies to any test strategy discussion — the golden rule (verify absence of unwanted behavior, not just presence of wanted behavior) is universal.
+description: >
+  Design and build software like reliable hardware — with testability engineered in from
+  the start (Design-For-Test, BIST/POST, TestPort contract, state-transition tables), not
+  bolted on afterward. Use when architecting programs, modules, games, services, or APIs;
+  when discussing "self-testing", "built-in test", «самотестирование», reliability, QA
+  automation, flaky behavior, or state-machine bugs. The golden rule is universal: verify
+  the absence of unwanted behavior, not just the presence of wanted behavior.
+  «тестируемость архитектуры», «Design-For-Test», «TestPort», «встроенное самотестирование».
 ---
 
 # Self-Test Design (программы как устройства)
@@ -79,4 +86,65 @@ TestPort {
 - [ ] Составлена таблица переходов состояний
 - [ ] Тестовый код отделён от продакшена (флаг сборки)
 - [ ] Каждый тест проверяет весь снимок, а не одно поле
+
+---
+
+## Пример: модуль корзины с TestPort (JavaScript)
+
+```javascript
+// cart.js
+class Cart {
+  constructor() {
+    this.items = [];
+    this.status = 'idle';
+    this.faultCode = 0;
+    this.ready = false;
+  }
+
+  // --- TestPort ---
+  markReady() { this.ready = true; this.status = 'ready'; }
+  heartbeat() { return this.ready && this.faultCode === 0; }
+  reportFault(code, msg) { this.faultCode = code; this.status = 'fault'; }
+  getStatus() { return { stage: this.status, faultCount: this.faultCode }; }
+
+  // --- Business logic ---
+  addItem(item) {
+    if (!this.ready) { this.reportFault(101, 'not ready'); return; }
+    if (!item || !item.id) { this.reportFault(401, 'invalid item'); return; }
+    this.items.push(item);
+  }
+
+  removeItem(itemId) {
+    const before = this.items.length;
+    this.items = this.items.filter(i => i.id !== itemId);
+    if (this.items.length === before) { this.reportFault(301, 'item not found'); }
+  }
+}
+
+// cart.test.js
+function testCartTransitions() {
+  const cart = new Cart();
+  // POST: module boots
+  cart.markReady();
+  assert(cart.getStatus().stage === 'ready');
+
+  // Golden vector: add item, verify full snapshot
+  cart.addItem({ id: 'A1', name: 'Apple', qty: 2 });
+  assertDeepEqual(cart, {
+    items: [{ id: 'A1', name: 'Apple', qty: 2 }],
+    status: 'ready', faultCode: 0, ready: true,
+  });
+
+  // State transition: remove → verify absence of unwanted side effects
+  const snapshot = JSON.stringify(cart);
+  cart.removeItem('A1');
+  assert(cart.items.length === 0);
+  assert(cart.faultCode === 0, 'faultCode should be 0 after successful removal');
+  assert(cart.status === 'ready', 'status should remain ready');
+
+  // Negative test: invalid item triggers fault, no silent corruption
+  cart.addItem(null);
+  assert(cart.faultCode === 401);
+  assert(cart.items.length === 0, 'invalid item must not be added');
+}
 ```

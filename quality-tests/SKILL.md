@@ -2,11 +2,13 @@
 name: quality-tests
 license: MIT
 description: >
-  Помогает писать осмысленные тесты, которые реально проверяют поведение кода, а не просто
-  увеличивают покрытие. Используй этот скилл всегда, когда нужно написать тесты для нового кода,
-  проверить качество существующих тестов, провести ревью тестового покрытия, или когда пользователь
-  спрашивает "как правильно тестировать X". Также применяй при рефакторинге тестовой базы,
-  при обсуждении тест-стратегии проекта, или когда нужно понять, почему тесты не ловят баги.
+  Helps write meaningful tests that verify code behavior, not just inflate coverage.
+  Use this skill when writing tests for new code, reviewing existing test quality or
+  test coverage, discussing test strategy, refactoring a test suite, or when the user
+  asks "how to test X" or "why don't my tests catch bugs". Also: «напиши тесты»,
+  «проверь качество тестов», «ревью тестового покрытия», «почему тесты не ловят баги»,
+  «рефакторинг тестовой базы», «тест-стратегия». Do NOT apply for one-off scripts
+  with no test infrastructure.
 ---
 
 # Quality Tests

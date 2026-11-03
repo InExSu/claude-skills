@@ -1,8 +1,14 @@
 ---
 name: ru-psychoagent
 license: MIT
-description: Архитектурные принципы проектирования ИИ-агентов на основе классических работ отечественной психологии и психолингвистики (Лурия, Выготский, Бернштейн, Бахтин и др.). Применять при разработке агентов, LLM-пайплайнов, систем с внутренней речью, сенсомоторными петлями и смыслообразованием.
-allowed-tools: Read Write Edit Bash Grep mcp__*
+description: >
+  Architecture principles for AI agents based on the Russian psychological school — Luria,
+  Vygotsky, Bernstein, Bakhtin: internal speech, sensorimotor loops, sense-making. Use when
+  designing agents, LLM pipelines, systems with internal speech or sensorimotor feedback.
+  «Архитектура агента», «внутренняя речь», «сенсомоторная петля», «смыслообразование»,
+  «отечественная психология», «agent design», «LLM pipeline». Do NOT apply to general coding
+  tasks with no agent-architecture component.
+allowed-tools: Read Write Edit
 ---
 
 # Скилл: Русская психологическая школа для ИИ-агентов
@@ -92,7 +98,30 @@ allowed-tools: Read Write Edit Bash Grep mcp__*
 3. Предложи код с реализацией принципов
 4. Если просят «как обычно» — возрази, предложи минимальную версию с внутренней речью и обратной связью
 
+## Паттерн: сенсомоторная петля + внутренняя речь (псевдокод)
+
+```python
+def agent_cycle(task):
+    # 1. Восприятие (сенсорика)
+    observation = perceive(task)
+
+    # 2. Внутренняя речь (Выготский) — сжатие до предикативной формы
+    internal_speech = compress(observation)  # "что не так?" → "где разрыв?"
+    plan = formulate_plan(internal_speech)
+
+    # 3. Действие (Бернштейн — кольцевое управление)
+    result = execute(plan)
+
+    # 4. Коррекция (петля, не разомкнутая цепь)
+    error = compare(result, observation.expected)
+    if error:
+        corrected = adjust(plan, error)
+        result = execute(corrected)
+
+    # 5. Оценочная позиция (Бахтин) — ответ имеет адресата
+    return formulate_response(result, task.user_context)
+```
+
 ---
 
 *Основано на: Лурия, Бернштейн, Петренко, Рубинштейн, Поливанов, Волошинов/Бахтин, Выготский, Леонтьев, Залевская.*
-```

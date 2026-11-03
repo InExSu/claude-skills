@@ -2,12 +2,12 @@
 name: rwd-chain
 license: MIT
 description: >
-  Apply this skill when the user writes pipeline/chain execution code, sequential
-  function runners with error handling, decorator-wrapped steps, or asks to implement
-  "rwd", "chain of decorators", "pipeline with profiling", or "NS_Container pattern".
-  Language-agnostic: works in JS, PHP, Python, Go. Uses Hungarian notation
-  (o_Error, a_Log, f_RWD_Start_Time). Do NOT apply without explicit activation
-  or clear pipeline/chain context.
+  Pipeline/chain execution: sequential function runners with error handling, decorator-wrapped
+  steps, NS_Container pattern. Use when writing pipeline code, chain of decorators, or when the
+  user says "rwd", "chain of decorators", "pipeline with profiling", «конвейер», «цепочка шагов»,
+  «декоратор-раннер», «NS_Container». Language-agnostic: JS, PHP, Python, Go. Uses Hungarian
+  notation (o_Error, a_Log, f_RWD_Start_Time). Do NOT apply without explicit activation or
+  clear pipeline/chain context.
 ---
 
 # RWD Chain Pattern (universal)
@@ -232,3 +232,9 @@ function a_price_Command_Build(array $a_Item): array {
 ```
 
 или "rwd chain", "pipeline с декораторами", "NS_Container pattern"
+
+## Cross-references
+
+- **[noosphere](../noosphere/SKILL.md)** — the global state object `ns` that the chain operates on
+- **[spaghetti-rwd](../spaghetti-rwd/SKILL.md)** — decomposing monolithic functions into steps for this chain
+- **[pure-functions](../pure-functions/SKILL.md)** — each step should return `{ ok, value/error }`
