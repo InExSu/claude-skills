@@ -40,7 +40,7 @@
 
 ## Каталог (кратко)
 
-Testing: `tdd-bugfix`, `quality-tests`, `self-test-design`, `proof-of-correctness`.
+Testing: `tdd-bugfix`, `quality-tests`, `self-test-design`, `game-ui-probe`, `proof-of-correctness`.
 Architecture: `pure-functions`, `if-condition-refactor`, `noosphere`,
 `state-machine-if-improves-understanding`, `spaghetti-rwd`. Naming: `hungarian-notation`
 (opt-in), `constant-naming-convention`, `explicit-boolean-returns`, `token-economy`.

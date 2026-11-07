@@ -4,7 +4,7 @@
 
 **Коллекция [Agent Skills](https://agentskills.io) для AI-агентов** — стандарты кода, дисциплина тестирования, архитектурные паттерны, проектирование агентов и инструменты для диаграмм DRAKON. Подходит любому агенту, реализующему открытый стандарт, в том числе [Claude Code](https://claude.com/claude-code).
 
-[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-25-blue?style=flat-square)](#-каталог-скиллов)
+[![Skills](https://img.shields.io/badge/%D1%81%D0%BA%D0%B8%D0%BB%D0%BB%D0%BE%D0%B2-26-blue?style=flat-square)](#-каталог-скиллов)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-под-микроскопом)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-каталог-скиллов)
@@ -49,6 +49,7 @@ flowchart LR
 | **[tdd-bugfix](tdd-bugfix/SKILL.md)** | Исправление багов строго по циклу **RED → YELLOW → GREEN**: сначала падающий тест, воспроизводящий баг, затем минимальная заплатка, затем чистая правка. Патчить исходники до появления красного теста запрещено. |
 | **[quality-tests](quality-tests/SKILL.md)** | Тесты, которые проверяют поведение, а не наращивают покрытие. Таблица диагностики в начале плюс разделы об антипаттернах (тавтологичные тесты), о том, что тестировать, и почему набор тестов не ловит баги. |
 | **[self-test-design](self-test-design/SKILL.md)** | Программы проектируются как надёжные устройства: Design-For-Test, встроенное самотестирование (BIST/POST), контракт `TestPort`, таблицы переходов состояний. Золотое правило: проверяй **отсутствие нежелательного** поведения, а не только наличие желаемого. |
+| **[game-ui-probe](game-ui-probe/SKILL.md)** | Браузерные UI-пробы для игр и веб-приложений: скриншоты, computed style, направления камер, геометрия HUD и проверка «элемент виден и не за краем». Превращает «выглядит нормально» в числа и assert. |
 | **[proof-of-correctness](proof-of-correctness/SKILL.md)** | Минимальное доказательство корректности кода — три вопроса (контракт, инвариант, граница доверия) за секунды, не часы. Ловит логические баги до запуска тестов. Без формальных методов (не Coq/Lean). |
 
 ### 🏗️ Архитектура и рефакторинг

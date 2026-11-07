@@ -4,7 +4,7 @@
 
 **A curated collection of [Agent Skills](https://agentskills.io) for AI agents** — coding standards, testing discipline, architecture patterns, agent design and DRAKON diagram tooling. They work with any agent that implements the open standard, including [Claude Code](https://claude.com/claude-code).
 
-[![Skills](https://img.shields.io/badge/skills-25-blue?style=flat-square)](#-skill-catalog)
+[![Skills](https://img.shields.io/badge/skills-26-blue?style=flat-square)](#-skill-catalog)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-D97757?style=flat-square)](https://agentskills.io)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white)](#-drakonhub-spotlight)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#-skill-catalog)
@@ -49,6 +49,7 @@ flowchart LR
 | **[tdd-bugfix](tdd-bugfix/SKILL.md)** | Bug fixing through a strict **RED → YELLOW → GREEN** cycle: first a failing test that reproduces the bug, then a minimal patch, then a clean refactor. Never patch source code before the red test exists. |
 | **[quality-tests](quality-tests/SKILL.md)** | Tests that check behavior instead of inflating coverage. A diagnostic start table plus sections on antipatterns (tautological tests), what to test, and why a suite fails to catch bugs. |
 | **[self-test-design](self-test-design/SKILL.md)** | Build software like reliable hardware: Design-For-Test, built-in self-test (BIST/POST), the `TestPort` contract, state-transition tables. The golden rule: verify the **absence of unwanted** behavior, not only the presence of wanted behavior. |
+| **[game-ui-probe](game-ui-probe/SKILL.md)** | Browser UI probing for games and web apps: screenshots, computed styles, camera directions, HUD geometry, and "element is visible and inside the frame" checks. Turns "looks fine" into numbers and asserts. |
 | **[proof-of-correctness](proof-of-correctness/SKILL.md)** | Minimal correctness reasoning for any code fragment — three questions (contract, invariant, trust boundary) asked in seconds, not hours. Catches logical bugs before tests run. No formal methods (not Coq/Lean). |
 
 ### 🏗️ Architecture & refactoring
